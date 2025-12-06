@@ -70,7 +70,7 @@ class UserFlat(models.Model):
     UserFlatId = models.BigAutoField(primary_key=True)
     UserId = models.ForeignKey(User, on_delete=models.CASCADE, related_name='userflats')
     FlatId = models.ForeignKey(Flat, on_delete=models.CASCADE, related_name='userflats')
-    UserFlatDateFrom = models.DateField()
+    UserFlatDateFrom = models.DateField(auto_now_add=True)
     UserFlatDateTo = models.DateField(null=True, blank=True)
     UserFlatRole = models.CharField(max_length=10, choices=UserFlatRole.choices)
     class Meta:
@@ -82,7 +82,7 @@ class UserFlat(models.Model):
 
 class Rent(models.Model):
     RentId = models.BigAutoField(primary_key=True)
-    UserId = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rents')
+    FlatId = models.ForeignKey(Flat, on_delete=models.CASCADE, related_name='rents')
     RentMonth = models.SmallIntegerField()
     RentYear = models.SmallIntegerField()
     RentAmount = models.DecimalField(max_digits=12,  decimal_places=2)

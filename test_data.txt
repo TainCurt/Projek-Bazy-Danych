@@ -1,0 +1,62 @@
+{
+  "UserName": "Jan",
+  "UserSurname": "Kowalski",
+  "UserEmail": "jan.kowalski@example.com",
+  "UserPassword": "tajnehaslo123",
+  "UserRole": "RESIDENT",
+  "UserDate": "1990-05-15",
+  "UserStatus": true,
+  "Flats": [1,2]
+}
+
+
+{
+  "BuildingStreet": "Kwiatowa",
+  "BuildingNumber": "12A",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-123"
+}
+
+
+{
+  "BuildingId": 1,
+  "FlatNumber": "12A",
+  "FlatFloor": 3,
+  "FlatArea": 58.75,
+  "FlatStatus": true
+}
+
+
+{
+    "RentId": 2,
+    "RentMonth": 11,
+    "RentYear": 2025,
+    "RentAmount": "1800.50",
+    "RentDateDue": "2025-12-10",
+    "RentStatus": "PAID",
+    "RentDate": null,
+    "FlatId": 4
+}
+
+
+{
+    "UserId": 1,
+    "AnnounTitle": "Przypomnienie o opłatach",
+    "AnnounDescription": "Prosimy o dokonanie wpłaty za grudzień do 10 dnia miesiąca.",
+    "AnnounDate": "2025-12-06T12:00:00Z",
+    "AnnounFrom": "2025-12-06",
+    "AnnounTo": "2025-12-31"
+}
+
+
+{
+  "UserId": 1,
+  "FlatId": 2,
+  "BuildingId": 1,
+  "ReportType": "GENERAL",
+  "ReportTitle": "Awaria windy",
+  "ReportDescription": "Winda w budynku nie działa od rana",
+  "ReportCategory": "Maintenance",
+  "ReportStatus": "WAITING",
+  "ReportTime": "2025-12-06T12:00:00Z"
+}

@@ -7,37 +7,13 @@ from django.urls import is_valid_path
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from ..models import Building, Flat
-from ..serializer import FlatSerializer
+from ..models import Building, Flat, User, Rent
+from ..serializer import FlatSerializer, UserFlatSerializer, UserSerializer, RentSerializer
 from DominoApp import serializer
 
+
 @api_view(['GET', 'POST'])
-def building_flats(request, building_id):
-
-    try:
-        building = Building.objects.get(pk=building_id)
-    except Building.DoesNotExist:
-        return Response({"error": "Building not found"}, status=404)
-
-    if request.method == 'GET':
-        flats = Flat.objects.filter(BuildingId=building)
-        serializer = FlatSerializer(flats, many=True)
-        return Response(serializer.data)
-
-    if request.method == 'POST':
-        data = request.data.copy()
-        data["BuildingId"] = building.BuildingId
-
-        serializer = FlatSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-
-        return Response(serializer.errors, status=400)
-
-
-@api_view(['GET','PUT', 'DELETE'])
-def flat_detail(request, building_id, flat_id):
+def flat_rent(request, flat_id, building_id):
 
     try:
         building = Building.objects.get(pk=building_id)
@@ -50,16 +26,55 @@ def flat_detail(request, building_id, flat_id):
         return Response({"error": "Flat not found in this building"}, status=404)
 
     if request.method == 'GET':
-        serializer = FlatSerializer(flat)
+        rents = Rent.objects.filter(FlatId=flat)
+        serializer = RentSerializer(rents, many=True)
+        return Response(serializer.data)
+
+    if request.method == 'POST':
+        data = request.data.copy()
+        data["FlatId"] = flat.FlatId
+
+        serializer = RentSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+
+        return Response(serializer.errors, status=400)
+
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def falt_rent_detail(request, building_id, flat_id, rent_id):
+
+    try:
+        building = Building.objects.get(pk=building_id)
+    except Building.DoesNotExist:
+        return Response({"error": "Building not found"}, status=404)
+    
+    try:
+        flat = Flat.objects.get(pk=flat_id, BuildingId=building)
+    except Flat.DoesNotExist:
+        return Response({"error": "Flat not found in this building"}, status=404)
+
+    try:
+        rent = Rent.objects.get(pk=rent_id, FlatId=flat)
+    except Rent.DoesNotExist:
+        return Response({"error": "Rent not found for this flat"}, status=404)
+
+    if request.method == 'GET':
+        serializer = RentSerializer(rent)
         return Response(serializer.data)
 
     if request.method == 'PUT':
-        serializer = FlatSerializer(flat, data=request.data)
+        data = request.data.copy()
+        data['FlatId'] = flat.FlatId   
+
+        serializer = RentSerializer(rent, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=400)
 
     if request.method == 'DELETE':
-        flat.delete()
+        rent.delete()
         return Response(status=204)
