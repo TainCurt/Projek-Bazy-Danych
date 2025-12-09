@@ -10,7 +10,7 @@ class UserRole(models.TextChoices):
 
 class ReportType(models.TextChoices):
     FLAT = 'FLAT', 'Mieszkanie'
-    BUILDING = 'BUILDING', ' Budynek'
+    BUILDING = 'BUILDING', 'Budynek'
     GENERAL = 'GENERAL', 'Ogólne'
 
 class ReportStatus(models.TextChoices):
@@ -54,8 +54,8 @@ class User(models.Model):
     UserId = models.BigAutoField(primary_key=True)
     UserName = models.CharField(max_length=30)
     UserSurname = models.CharField(max_length=40)
-    UserEmail = models.CharField(max_length=100)
-    UserPassword = models.CharField(max_length=40)
+    UserEmail = models.CharField(max_length=100, unique=True)
+    UserPassword = models.CharField(max_length=128)
     UserRole = models.CharField(max_length=10, choices=UserRole.choices)
     UserDate = models.DateField()
     UserStatus = models.BooleanField(default=True)
@@ -87,7 +87,7 @@ class Rent(models.Model):
     RentYear = models.SmallIntegerField()
     RentAmount = models.DecimalField(max_digits=12,  decimal_places=2)
     RentDateDue = models.DateField()
-    RentStatus = models.CharField(max_length=10, choices=RentStatus.choices, default=RentStatus.PAID)
+    RentStatus = models.CharField(max_length=10, choices=RentStatus.choices, default=RentStatus.PENDING)
     RentDate = models.DateField(null=True, blank=True)
 
     def __str__(self):
@@ -123,6 +123,14 @@ class Announ(models.Model):
     def __str__(self):
         return f"{self.AnnounTitle} ({self.AnnounFrom} - {self.AnnounTo})"
     
+class AuthToken(models.Model):
+    TokenId = models.BigAutoField(primary_key=True)
+    UserId = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tokens')
+    TokenKey = models.CharField(max_length=40, unique=True)
+    TokenCreated = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"{self.UserId.UserEmail} ({self.TokenCreated})"
 
     
 

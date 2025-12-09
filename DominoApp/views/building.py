@@ -9,6 +9,7 @@ from rest_framework import status
 from ..models import Building
 from ..serializer import BuildingSerializer
 from DominoApp import serializer
+from DominoApp.utils import get_authenticated_user
 
 @api_view(['GET', 'POST'])
 def get_buildings(request):
@@ -18,6 +19,10 @@ def get_buildings(request):
         return Response(serializer.data)
     
     elif request.method == 'POST':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         serializer = BuildingSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -36,6 +41,10 @@ def building_detail(request, pk):
         return Response(serializer.data)
     
     elif request.method == 'PUT':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         serializer = BuildingSerializer(building, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -43,6 +52,10 @@ def building_detail(request, pk):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     elif request.method == 'DELETE':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         building.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

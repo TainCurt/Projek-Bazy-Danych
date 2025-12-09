@@ -10,6 +10,7 @@ from rest_framework import status
 from ..models import Building, Flat, User, Rent
 from ..serializer import FlatSerializer, UserFlatSerializer, UserSerializer, RentSerializer
 from DominoApp import serializer
+from DominoApp.utils import get_authenticated_user
 
 
 @api_view(['GET', 'POST'])
@@ -31,6 +32,10 @@ def flat_rent(request, flat_id, building_id):
         return Response(serializer.data)
 
     if request.method == 'POST':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+    
         data = request.data.copy()
         data["FlatId"] = flat.FlatId
 
@@ -66,6 +71,10 @@ def falt_rent_detail(request, building_id, flat_id, rent_id):
         return Response(serializer.data)
 
     if request.method == 'PUT':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         data = request.data.copy()
         data['FlatId'] = flat.FlatId   
 
@@ -76,5 +85,9 @@ def falt_rent_detail(request, building_id, flat_id, rent_id):
         return Response(serializer.errors, status=400)
 
     if request.method == 'DELETE':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         rent.delete()
         return Response(status=204)

@@ -1,0 +1,28 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.pyc
+
+# Virtual environment
+venv/
+ENV/
+env/
+
+# Django stuff:
+*.log
+*.pot
+*.py[co]
+db.sqlite3
+
+# IDE
+.vscode/
+.idea/
+
+# Migration cache
+**/migrations/__pycache__/
+
+# OS-generated
+.DS_Store
+Thumbs.db

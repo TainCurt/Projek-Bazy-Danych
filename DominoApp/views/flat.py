@@ -10,6 +10,8 @@ from rest_framework import status
 from ..models import Building, Flat
 from ..serializer import FlatSerializer
 from DominoApp import serializer
+from DominoApp.utils import get_authenticated_user
+
 
 @api_view(['GET', 'POST'])
 def building_flats(request, building_id):
@@ -25,6 +27,10 @@ def building_flats(request, building_id):
         return Response(serializer.data)
 
     if request.method == 'POST':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         data = request.data.copy()
         data["BuildingId"] = building.BuildingId
 
@@ -54,6 +60,10 @@ def flat_detail(request, building_id, flat_id):
         return Response(serializer.data)
 
     if request.method == 'PUT':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         serializer = FlatSerializer(flat, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -61,5 +71,9 @@ def flat_detail(request, building_id, flat_id):
         return Response(serializer.errors, status=400)
 
     if request.method == 'DELETE':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         flat.delete()
         return Response(status=204)

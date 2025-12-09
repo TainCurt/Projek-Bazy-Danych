@@ -1,6 +1,6 @@
 from urllib.parse import urlparse
 from django.urls import path
-from DominoApp.views import announ, flat, user, building, userflat, rent, report
+from DominoApp.views import announ, flat, user, building, userflat, rent, report, auth
 
 urlpatterns=[
     path('users/', user.get_users),
@@ -16,6 +16,10 @@ urlpatterns=[
     path('buildings/<int:building_id>/flats/<int:flat_id>/rent/', rent.flat_rent),
     path('buildings/<int:building_id>/flats/<int:flat_id>/rent/<int:rent_id>/', rent.falt_rent_detail),
     path('buildings/<int:building_id>/flats/<int:flat_id>/tenants/', userflat.userflat_list),
-    path('buildings/<int:building_id>/flats/<int:flat_id>/tenants/<int:userflat_id>/', userflat.userflat_detail)
-
+    path('buildings/<int:building_id>/flats/<int:flat_id>/tenants/<int:userflat_id>/', userflat.userflat_detail),
+    path('login/', auth.login),
+    path('me/', user.me),
+    path('my/flats/', user.my_flats),
+    path('my/rents/', user.my_rents),
+    path('my/reports/', user.my_reports)
 ]

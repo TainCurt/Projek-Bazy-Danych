@@ -7,9 +7,11 @@ from django.urls import is_valid_path
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from ..models import Building, Flat, UserFlat
+from ..models import Building, Flat, UserFlat, UserFlatRole
 from ..serializer import FlatSerializer, UserFlatSerializer
 from DominoApp import serializer
+from DominoApp.utils import get_authenticated_user
+
 
 @api_view(['GET', 'POST'])
 def userflat_list(request, building_id, flat_id):
@@ -30,8 +32,30 @@ def userflat_list(request, building_id, flat_id):
         return Response(serializer.data)
 
     if request.method == 'POST':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         data = request.data.copy()
         data['FlatId'] = flat.FlatId 
+        
+        role = data.get('UserFlatRole')
+        if not role:
+            role = UserFlatRole.TENANT
+            data['UserFlatRole'] = role
+
+        if role == UserFlatRole.OWNER:
+            existing_owner = UserFlat.objects.filter(
+                FlatId=flat,
+                UserFlatRole=UserFlatRole.OWNER,
+                UserFlatDateTo__isnull=True
+            ).exists()
+
+            if existing_owner:
+                return Response(
+                    {"error": "This flat already has an active owner"},
+                    status=400
+                )
 
         serializer = UserFlatSerializer(data=data)
         if serializer.is_valid():
@@ -62,8 +86,29 @@ def userflat_detail(request, building_id, flat_id, userflat_id):
         return Response(serializer.data)
 
     if request.method == 'PUT':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         data = request.data.copy()
         data['FlatId'] = flat.FlatId   
+
+        role = data.get('UserFlatRole', userflat.UserFlatRole)
+        if not role:
+            role = UserFlatRole.TENANT
+            data['UserFlatRole'] = role
+
+        if role == UserFlatRole.OWNER:
+            existing_owner = UserFlat.objects.filter(
+                FlatId=flat,
+                UserFlatRole=UserFlatRole.OWNER,
+                UserFlatDateTo__isnull=True
+            ).exclude(pk=userflat.pk)
+            if existing_owner.exists():
+                return Response(
+                    {"error": "This flat already has an active owner"},
+                    status=400
+                )
 
         serializer = UserFlatSerializer(userflat, data=data)
         if serializer.is_valid():
@@ -72,5 +117,9 @@ def userflat_detail(request, building_id, flat_id, userflat_id):
         return Response(serializer.errors, status=400)
 
     if request.method == 'DELETE':
+        user, error_response = get_authenticated_user(request, required_role='ADMIN')
+        if error_response:
+            return error_response
+        
         userflat.delete()
         return Response(status=204)

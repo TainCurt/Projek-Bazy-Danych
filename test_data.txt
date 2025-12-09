@@ -60,3 +60,52 @@
   "ReportStatus": "WAITING",
   "ReportTime": "2025-12-06T12:00:00Z"
 }
+
+{
+  "UserFlatId": 5,
+  "UserFlatDateFrom": "2025-12-07",
+  "UserFlatDateTo": null,
+  "UserFlatRole": "OWNER",
+  "UserId": 5,
+  "FlatId": 4,
+}
+
+curl -Method POST "http://127.0.0.1:8000/dominoapp/buildings/8/" `
+  -Headers @{"Content-Type"="application/json"} `
+  -Body '{"BuildingStreet":"TestNoToken","BuildingNumber":"1","BuildingCity":"Miasto","BuildingPostal":"00-001"}'
+
+curl -Method POST "http://127.0.0.1:8000/dominoapp/buildings/8/" `
+  -Headers @{
+    "Content-Type"="application/json"
+    "Authorization"="Token $RESIDENT_TOKEN"
+  } `
+  -Body '{"BuildingStreet":"ResidentNo","BuildingNumber":"2","BuildingCity":"Miasto","BuildingPostal":"00-002"}'
+
+curl -Method POST "http://127.0.0.1:8000/dominoapp/buildings/8/" `
+  -Headers @{
+    "Content-Type"="application/json"
+    "Authorization"="Token $ADMIN_TOKEN"
+  } `
+  -Body '{"BuildingStreet":"AdminowaTest","BuildingNumber":"99","BuildingCity":"AdminCity","BuildingPostal":"99-999"}'
+
+curl -Method GET "http://127.0.0.1:8000/dominoapp/reports/?status=WAITING&building_id=8" `
+  -Headers @{
+    "Authorization"="Token $ADMIN_TOKEN"
+  }
+
+curl -Method GET "http://127.0.0.1:8000/dominoapp/reports/?building_id=8" `
+  -Headers @{
+    "Authorization"="Token $ADMIN_TOKEN"
+  }
+
+curl -Method POST "http://127.0.0.1:8000/dominoapp/my/reports/" `
+  -Headers @{
+    "Content-Type"="application/json"
+    "Authorization"="Token $RESIDENT_TOKEN"
+  } `
+  -Body '{"ReportTitle":"Problem z klatka","ReportDescription":"Brudno na klatce schodowej","ReportCategory":"czystosc","ReportType":"BUILDING","BuildingId":8}'
+
+curl -Method GET "http://127.0.0.1:8000/dominoapp/my/rents/" `
+  -Headers @{
+    "Authorization"="Token $RESIDENT_TOKEN"
+  }
