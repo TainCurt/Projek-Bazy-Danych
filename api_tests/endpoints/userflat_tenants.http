@@ -1,0 +1,73 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@BUILDING_ID = 
+@FLAT_ID = 
+@USER_ID = 
+@USERFLAT_ID = 
+
+### Mieszkancy mieszkania
+GET {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: dodajemy mieszkanca 
+POST {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{USER_ID}},
+  "UserFlatRole": "TENANT"
+}
+
+###
+
+### Admin: dodajemy wlasciciela
+POST {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{USER_ID}},
+  "UserFlatRole": "OWNER"
+}
+
+###
+
+### Dodajemy drugiego wlasciciela powinien byc blad
+POST {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{USER_ID}},
+  "UserFlatRole": "OWNER"
+}
+
+###
+
+### Sprawdzoamy detale tenant relation 
+GET {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/{{USERFLAT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: update relacji 
+PUT {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/{{USERFLAT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{USER_ID}},
+  "FlatId": {{FLAT_ID}},
+  "UserFlatRole": "TENANT",
+  "UserFlatDateTo": null
+}
+
+###
+
+### Admin: wywalamy mieszkanca
+DELETE {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/{{USERFLAT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}

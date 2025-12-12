@@ -49,7 +49,7 @@ def flat_rent(request, flat_id, building_id):
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
-def falt_rent_detail(request, building_id, flat_id, rent_id):
+def flat_rent_detail(request, building_id, flat_id, rent_id):
 
     try:
         building = Building.objects.get(pk=building_id)

@@ -1,0 +1,48 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@BUILDING_ID = 
+
+### Wypisanie budynkow
+GET {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: tworzymy budynek
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Kwiatowa",
+  "BuildingNumber": "15",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-002"
+}
+
+###
+
+### Sprawdzamy budynek
+GET {{BASE_URL}}buildings/{{BUILDING_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: update budynku - PUT (powinnismy full update)
+PUT {{BASE_URL}}buildings/{{BUILDING_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Kwiatowa",
+  "BuildingNumber": "15B",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-002"
+}
+
+###
+
+### Admin: wywalenie budynku
+DELETE {{BASE_URL}}buildings/{{BUILDING_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}

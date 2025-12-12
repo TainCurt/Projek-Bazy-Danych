@@ -1,0 +1,7 @@
+UserName="Admin",
+UserSurname="Root",
+UserEmail="admin@example.com",
+UserPassword=make_password("admin123"),
+UserRole=UserRole.ADMIN,
+UserDate=datetime.date(2025, 12, 12),
+UserStatus=True

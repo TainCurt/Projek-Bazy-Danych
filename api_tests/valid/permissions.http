@@ -1,0 +1,90 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@RESIDENT_TOKEN =
+@BUILDING_ID =
+@FLAT_ID = 
+@REPORT_ID = 
+
+### No token /me wiec 401
+GET {{BASE_URL}}me/
+
+###
+
+### No token /my/flats wiec 401
+GET {{BASE_URL}}my/flats/
+
+###
+
+### No token /my/rents wiec 401
+GET {{BASE_URL}}my/rents/
+
+###
+
+### No token /my/reports wiec 401
+GET {{BASE_URL}}my/reports/
+
+###
+
+### Resident probuje admin endpoint: GET /reports wiec 403
+GET {{BASE_URL}}reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Resident probuje admin endpoint: POST /buildings wiec 403
+POST {{BASE_URL}}buildings/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "NiePowinno",
+  "BuildingNumber": "1",
+  "BuildingCity": "X",
+  "BuildingPostal": "00-000"
+}
+
+###
+
+### Resident probuje admin endpoint: POST /users wiec 403
+POST {{BASE_URL}}users/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Should",
+  "UserSurname": "Fail",
+  "UserEmail": "should.fail@example.com",
+  "UserPassword": "x",
+  "UserDate": "2025-12-12"
+}
+
+###
+
+### Resident probuje admin endpoint: POST /announ wiec 403
+POST {{BASE_URL}}announ/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "AnnounTitle": "Nie powinno przejść",
+  "AnnounDescription": "Resident nie może tworzyć ogłoszeń",
+  "AnnounFrom": "2025-12-12"
+}
+
+###
+
+### zly token /me wiec 401
+GET {{BASE_URL}}me/
+Authorization: Token this_is_not_a_valid_token
+
+###
+
+### Resident probuje zmienic status (admin-only endpoint) wiec 403
+PUT {{BASE_URL}}reports/{{REPORT_ID}}/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "DONE"
+}

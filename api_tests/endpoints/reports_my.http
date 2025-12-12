@@ -1,0 +1,77 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@RESIDENT_TOKEN = 
+@FLAT_ID = 
+@BUILDING_ID = 
+
+### Moje reporty - z GENERAL
+GET {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Moje reporty (flat filter) - bez GENERAL taki design
+GET {{BASE_URL}}my/reports/?flat_id={{FLAT_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Moje reporty (building filter) - tutaj analogicznie ONLY BUILDING 
+GET {{BASE_URL}}my/reports/?building_id={{BUILDING_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Create GENERAL report
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "GENERAL",
+  "ReportTitle": "General test",
+  "ReportDescription": "General description",
+  "ReportCategory": "INFO"
+}
+
+###
+
+### Create FLAT report
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{FLAT_ID}},
+  "ReportTitle": "Flat issue test",
+  "ReportDescription": "Something broken in flat",
+  "ReportCategory": "Usterka"
+}
+
+###
+
+### Create BUILDING report
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{BUILDING_ID}},
+  "ReportTitle": "Building issue test",
+  "ReportDescription": "Something broken in building",
+  "ReportCategory": "Techniczne"
+}
+
+###
+
+### Blad bo flat_id not int (400 chyba)
+GET {{BASE_URL}}my/reports/?flat_id=abc
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Blad bo both filters at once (400 chyba)
+GET {{BASE_URL}}my/reports/?flat_id={{FLAT_ID}}&building_id={{BUILDING_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}

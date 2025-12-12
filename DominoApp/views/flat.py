@@ -64,7 +64,9 @@ def flat_detail(request, building_id, flat_id):
         if error_response:
             return error_response
         
-        serializer = FlatSerializer(flat, data=request.data)
+        data = request.data.copy()
+        data["BuildingId"] = building.BuildingId
+        serializer = FlatSerializer(flat, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

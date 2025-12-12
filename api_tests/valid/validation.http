@@ -1,0 +1,138 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@RESIDENT_TOKEN = 
+@BUILDING_ID =
+@FLAT_ID = 
+@RANDOM_FLAT_ID = 
+@REPORT_ID = 
+@USER_ID = 
+@USERFLAT_ID = 
+
+### my/rents: flat_id not int wiec 400
+GET {{BASE_URL}}my/rents/?flat_id=abc
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### my/reports: flat_id not int wiec 400
+GET {{BASE_URL}}my/reports/?flat_id=abc
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### my/reports: building_id not int wiec 400
+GET {{BASE_URL}}my/reports/?building_id=abc
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### my/reports: oba filtry wiec 400
+GET {{BASE_URL}}my/reports/?flat_id={{FLAT_ID}}&building_id={{BUILDING_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### my/rents: RANDOM flat_id wiec 403
+GET {{BASE_URL}}my/rents/?flat_id={{RANDOM_FLAT_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### my/reports: RANDOM flat_id wiec 403
+GET {{BASE_URL}}my/reports/?flat_id={{RANDOM_FLAT_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Nowy FLAT report bez FlatId wiec 400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "ReportTitle": "Brak FlatId",
+  "ReportDescription": "Powinno zwrócić 400",
+  "ReportCategory": "Test"
+}
+
+###
+
+### Nowy BUILDING report bez BuildingId wiec 400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "ReportTitle": "Brak BuildingId",
+  "ReportDescription": "Powinno zwrócić 400",
+  "ReportCategory": "Test"
+}
+
+###
+
+### Nowy report ze zlym ReportType wiec 400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "SOMETHING_ELSE",
+  "ReportTitle": "Zły typ",
+  "ReportDescription": "Powinno zwrócić 400",
+  "ReportCategory": "Test"
+}
+
+###
+
+### Admin reports: zly status value wiec 400
+GET {{BASE_URL}}reports/?status=NOT_A_STATUS
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin update report: bez ReportStatus wiec 400
+PUT {{BASE_URL}}reports/{{REPORT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+}
+
+###
+
+### Admin update report: zly ReportStatus wiec 400
+PUT {{BASE_URL}}reports/{{REPORT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "INVALID_STATUS"
+}
+
+###
+
+### UserFlat: drugi OWNER wiec 400
+# tylko jeśli w danym flacie jest już aktywny OWNER
+POST {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/tenants/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{USER_ID}},
+  "UserFlatRole": "OWNER"
+}
+
+###
+
+### Users: PATCH pusty password wiec 400
+# USER_ID musi wskazywać realnego usera
+PATCH {{BASE_URL}}users/{{USER_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserPassword": ""
+}

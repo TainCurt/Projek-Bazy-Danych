@@ -1,0 +1,33 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+
+### Admin login
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "admin@example.com",
+  "UserPassword": "admin123"
+}
+
+###
+
+### Resident login
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "resident@example.com",
+  "UserPassword": "resident123"
+}
+
+###
+
+### Zly login
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "admin@example.com",
+  "UserPassword": "wrongpassword"
+}

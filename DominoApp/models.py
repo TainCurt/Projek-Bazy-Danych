@@ -57,7 +57,7 @@ class User(models.Model):
     UserEmail = models.CharField(max_length=100, unique=True)
     UserPassword = models.CharField(max_length=128)
     UserRole = models.CharField(max_length=10, choices=UserRole.choices)
-    UserDate = models.DateField()
+    UserDate = models.DateField(auto_now_add=True)
     UserStatus = models.BooleanField(default=True)
     Flats = models.ManyToManyField(Flat, through='UserFlat', related_name='users' )
 

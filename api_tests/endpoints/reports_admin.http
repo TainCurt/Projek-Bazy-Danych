@@ -1,0 +1,54 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@REPORT_ID = 
+
+### Admin: wypisanie reportow
+GET {{BASE_URL}}reports/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Filtr po statusi WAITING
+GET {{BASE_URL}}reports/?status=WAITING
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Filtr po id budynku
+GET {{BASE_URL}}reports/?building_id=1
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Filtr po statusie + building_id
+GET {{BASE_URL}}reports/?status=WAITING&building_id=1
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Detale reportu
+GET {{BASE_URL}}reports/{{REPORT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: update statusu reportu - PUT (tylko ReportStatus dozwolony)
+PUT {{BASE_URL}}reports/{{REPORT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "DONE"
+}
+
+###
+
+### Admin: update statusu reportu - invalid status (400)
+PUT {{BASE_URL}}reports/{{REPORT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "INVALID_STATUS"
+}

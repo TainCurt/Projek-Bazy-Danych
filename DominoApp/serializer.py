@@ -37,7 +37,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = '__all__'
         extra_kwargs = {
             'UserPassword' : {'write_only': True},
-            'UserRole' : {"required": False}
+            'UserRole' : {"required": False},
+            'UserDate': {'read_only': True}
         }
 
     def create(self, validated_data):
@@ -65,8 +66,9 @@ class UserSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         flats = validated_data.pop('Flats', None)
         password = validated_data.get("UserPassword")
-
-        if password:
+        if password is not None:
+            if password == "":
+                raise serializers.ValidationError({"UserPassword": "Password cannot be empty."})
             validated_data["UserPassword"] = make_password(password)
 
         for key, value in validated_data.items():

@@ -10,7 +10,7 @@ from ..models import User, UserFlat, Flat, Rent, Report, Building
 from ..serializer import UserSerializer, FlatSerializer, RentSerializer, ReportSerializer
 from DominoApp import serializer
 from DominoApp.utils import get_authenticated_user
-
+from django.db.models import Q
 
 @api_view(['GET', 'POST'])
 def get_users(request):
@@ -30,34 +30,31 @@ def get_users(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET', 'PUT', 'DELETE'])
+@api_view(['GET', 'PATCH', 'DELETE'])
 def user_detail(request, pk):
     try:
-        user = User.objects.get(pk=pk)
+        target_user = User.objects.get(pk=pk)
     except User.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
-    
+
+    # admin-only dla operacji na userach
+    auth_user, error_response = get_authenticated_user(request, required_role='ADMIN')
+    if error_response:
+        return error_response
+
     if request.method == 'GET':
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(target_user)
         return Response(serializer.data)
-    
-    elif request.method == 'PUT':
-        user, error_response = get_authenticated_user(request, required_role='ADMIN')
-        if error_response:
-            return error_response
-        
-        serializer = UserSerializer(user, data=request.data)
+
+    elif request.method == 'PATCH':
+        serializer = UserSerializer(target_user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     elif request.method == 'DELETE':
-        user, error_response = get_authenticated_user(request, required_role='ADMIN')
-        if error_response:
-            return error_response
-        
-        user.delete()
+        target_user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 @api_view(['GET'])
@@ -89,14 +86,39 @@ def my_rents(request):
     if error_response:
         return error_response
 
-    user_flats = UserFlat.objects.filter(UserId=user, UserFlatDateTo__isnull=True)
+    # 1) aktywne relacje user -> flat
+    user_flats_qs = UserFlat.objects.filter(UserId=user, UserFlatDateTo__isnull=True)
+    flat_ids = list(user_flats_qs.values_list('FlatId_id', flat=True))
 
-    flat_ids = [uf.FlatId.FlatId for uf in user_flats]  # pobieramy same ID mieszkań
+    # jeśli user nie ma mieszkań zwracamy pusta liste
+    if not flat_ids:
+        return Response([], status=status.HTTP_200_OK)
 
-    rents = Rent.objects.filter(FlatId__in=flat_ids).order_by('-RentYear', '-RentMonth')
+    # 2) filtr flat_id z query params
+    flat_id_param = request.query_params.get('flat_id')
+    if flat_id_param is not None:
+        try:
+            flat_id_int = int(flat_id_param)
+        except ValueError:
+            return Response(
+                {"flat_id": ["flat_id must be an integer."]},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # autoryzacja czy user ma dostęp do tego mieszkania
+        if flat_id_int not in flat_ids:
+            return Response(
+                {"error": "You are not assigned to this flat."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        rents = Rent.objects.filter(FlatId_id=flat_id_int).order_by('-RentYear', '-RentMonth')
+    else:
+        # bez filtra -> wszystkie naliczenia dla mieszkan uzytkownika
+        rents = Rent.objects.filter(FlatId_id__in=flat_ids).order_by('-RentYear', '-RentMonth')
 
     serializer = RentSerializer(rents, many=True)
-    return Response(serializer.data)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 @api_view(['GET', 'POST'])
 def my_reports(request):
@@ -106,15 +128,84 @@ def my_reports(request):
         return error_response
 
     if request.method == 'GET':
-        reports = Report.objects.filter(UserId=user).order_by('-ReportTime')
+        # query params
+        flat_id_param = request.query_params.get('flat_id')
+        building_id_param = request.query_params.get('building_id')
+
+        # nie pozwalamy mieszac filtrow
+        if flat_id_param is not None and building_id_param is not None:
+            return Response(
+                {"error": "Use either flat_id or building_id, not both."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        base_qs = Report.objects.filter(UserId=user)
+
+        # filtr po flat_id
+        if flat_id_param is not None:
+            try:
+                flat_id_int = int(flat_id_param)
+            except ValueError:
+                return Response(
+                    {"flat_id": ["flat_id must be an integer."]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # autoryzacja czy user ma aktywne przypisanie do tego lokalu
+            has_access = UserFlat.objects.filter(
+                UserId=user,
+                FlatId_id=flat_id_int,
+                UserFlatDateTo__isnull=True
+            ).exists()
+            if not has_access:
+                return Response(
+                    {"error": "You are not assigned to this flat."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            reports = base_qs.filter(FlatId_id=flat_id_int).order_by('-ReportTime')
+            serializer = ReportSerializer(reports, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # filtr po building_id
+        if building_id_param is not None:
+            try:
+                building_id_int = int(building_id_param)
+            except ValueError:
+                return Response(
+                    {"building_id": ["building_id must be an integer."]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # autoryzacja czy user ma jakikolwiek aktywny lokal w tym budynku
+            has_access = UserFlat.objects.filter(
+                UserId=user,
+                FlatId__BuildingId_id=building_id_int,
+                UserFlatDateTo__isnull=True
+            ).exists()
+            if not has_access:
+                return Response(
+                    {"error": "You have no flat in this building."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # moje BUILDING w tym budynku 
+            reports = base_qs.filter(
+                ReportType='BUILDING',
+                BuildingId_id=building_id_int
+            ).order_by('-ReportTime')
+
+            serializer = ReportSerializer(reports, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # brak filtrów czyli wszystkie moje (w tym GENERAL)
+        reports = base_qs.order_by('-ReportTime')
         serializer = ReportSerializer(reports, many=True)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     elif request.method == 'POST':
         data = request.data.copy()
-        # przypisujemy UserId z tokena a nie z body
         data['UserId'] = user.UserId
-
         data.pop('ReportStatus', None)
 
         report_type = data.get('ReportType', 'GENERAL')
@@ -139,7 +230,6 @@ def my_reports(request):
                     if not has_relation:
                         errors['FlatId'] = ['You are not assigned to this flat.']
                     else:
-                        # automatycznie ustawiamy BuildingId zgodnie z mieszkaniem
                         data['BuildingId'] = flat.BuildingId_id
 
         elif report_type == 'BUILDING':
@@ -161,14 +251,12 @@ def my_reports(request):
                     if not has_flat_in_building:
                         errors['BuildingId'] = ['You have no flat in this building.']
 
-            # nie potrzebujemy FlatId dla BUILDING
             data.pop('FlatId', None)
 
         elif report_type == 'GENERAL':
             data.pop('FlatId', None)
             data.pop('BuildingId', None)
 
-        # zły typ
         else:
             errors['ReportType'] = ['Invalid ReportType. Use FLAT, BUILDING or GENERAL.']
 
@@ -180,5 +268,3 @@ def my_reports(request):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-

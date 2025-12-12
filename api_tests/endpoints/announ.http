@@ -1,0 +1,50 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@RESIDENT_TOKEN = 
+@ANNOUN_ID = 
+
+### Rezydent: wypisujemy ogloszenia
+GET {{BASE_URL}}announ/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Admin: tworzymy ogloszenie
+POST {{BASE_URL}}announ/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": 999,
+  "AnnounTitle": "Test ogłoszenia",
+  "AnnounDescription": "Opis ogłoszenia",
+  "AnnounFrom": "2025-12-12"
+}
+
+###
+
+### Sprawdzamy ogloszenie
+GET {{BASE_URL}}announ/{{ANNOUN_ID}}/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Admin: update ogloszenia
+PUT {{BASE_URL}}announ/{{ANNOUN_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": 999,
+  "AnnounTitle": "Test ogłoszenia - update",
+  "AnnounDescription": "Opis ogłoszenia - update",
+  "AnnounFrom": "2025-12-12",
+  "AnnounTo": "2025-12-31"
+}
+
+###
+
+### Admin: usuwanie ogloszenia
+DELETE {{BASE_URL}}announ/{{ANNOUN_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}

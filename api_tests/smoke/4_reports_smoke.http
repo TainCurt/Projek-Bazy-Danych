@@ -1,0 +1,48 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = c045d2dcab33f80c8d3d1679974e4756ef234166
+@RESIDENT_TOKEN = 20118fff0297130feb9caa881785385ec161147e
+@FLAT_ID = 1
+
+### Rezydent tworzy FLAT reporta
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{FLAT_ID}},
+  "ReportTitle": "Test flow zgłoszenia",
+  "ReportDescription": "Test statusów",
+  "ReportCategory": "Test"
+}
+
+###
+
+### Admin sprawdza seporty
+GET {{BASE_URL}}reports/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin filtruje po WAITING
+GET {{BASE_URL}}reports/?status=WAITING
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin zmienia na DONE
+# Wklej odpowiedni REPORT_ID z listy
+PUT {{BASE_URL}}reports/4/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "DONE"
+}
+
+###
+
+### Resident sprawdza nowy status
+GET {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}

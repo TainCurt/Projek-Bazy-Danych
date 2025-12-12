@@ -1,0 +1,89 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@RESIDENT_TOKEN = 20118fff0297130feb9caa881785385ec161147e
+@FLAT_ID = 1
+@BUILDING_ID = 1
+
+### Me
+GET {{BASE_URL}}me/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### My flats
+GET {{BASE_URL}}my/flats/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### My rents (wszystkie)
+GET {{BASE_URL}}my/rents/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### My rents (wybvrane mieszkanie)
+GET {{BASE_URL}}my/rents/?flat_id={{FLAT_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### My reports (bez filtrow)
+GET {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Create GENERAL report
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "GENERAL",
+  "ReportTitle": "Ogólna uwaga",
+  "ReportDescription": "Coś ogólnego",
+  "ReportCategory": "INFO"
+}
+
+###
+
+### Create FLAT report
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{FLAT_ID}},
+  "ReportTitle": "Problem w mieszkaniu",
+  "ReportDescription": "Cieknie kran",
+  "ReportCategory": "Usterka"
+}
+
+###
+
+### Create BUILDING report
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{BUILDING_ID}},
+  "ReportTitle": "Problem w budynku",
+  "ReportDescription": "Nie działa winda",
+  "ReportCategory": "Techniczne"
+}
+
+###
+
+### My reports (z filtrem na mieszkanie)
+GET {{BASE_URL}}my/reports/?flat_id={{FLAT_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### My reports (z filtrem na budynek)
+GET {{BASE_URL}}my/reports/?building_id={{BUILDING_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}

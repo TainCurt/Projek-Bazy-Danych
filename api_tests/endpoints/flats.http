@@ -1,0 +1,50 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@BUILDING_ID = 
+@FLAT_ID = 
+
+### Wypisujemy mieszkania w budynku
+GET {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: tworzymy mieszkanie w budynku
+POST {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "101",
+  "FlatFloor": 1,
+  "FlatArea": 48.75,
+  "FlatStatus": true
+}
+
+###
+
+### Bierzemy detale mieszkania
+GET {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: update mieszkania
+PUT {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingId": {{BUILDING_ID}},
+  "FlatNumber": "101A",
+  "FlatFloor": 1,
+  "FlatArea": 48.75,
+  "FlatStatus": true
+}
+
+###
+
+### Admin: wywalamy mieszkanie 
+DELETE {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}

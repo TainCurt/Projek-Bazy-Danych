@@ -1,0 +1,79 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@USER_ID = 
+
+### Admin: wypisujemy userow
+GET {{BASE_URL}}users/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: tworzymy usera
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Test",
+  "UserSurname": "User",
+  "UserEmail": "test.user@example.com",
+  "UserPassword": "Test12345!",
+  "UserDate": "2025-12-12"
+}
+
+###
+
+### Admin: detale usera
+GET {{BASE_URL}}users/{{USER_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: PATCH detale usera np zmiana imienia
+PATCH {{BASE_URL}}users/{{USER_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "TestUpdated"
+}
+
+###
+
+### Admin: PATCH user haslo 
+PATCH {{BASE_URL}}users/{{USER_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserPassword": "NewPassword123!"
+}
+
+###
+
+### Login z nowym haslem (powinno byc 200 czyli git)
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "test.user@example.com",
+  "UserPassword": "NewPassword123!"
+}
+
+###
+
+### PATCH puste haslo (powinno wywalic 400)
+PATCH {{BASE_URL}}users/{{USER_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserPassword": ""
+}
+
+###
+
+### Admin: delete usera
+DELETE {{BASE_URL}}users/{{USER_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}

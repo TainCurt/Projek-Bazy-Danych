@@ -1,0 +1,19 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@RESIDENT_TOKEN = 
+
+### Me (admin)
+GET {{BASE_URL}}me/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Me (resident)
+GET {{BASE_URL}}me/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Me (bez tokena wiec 401)
+GET {{BASE_URL}}me/

@@ -1,0 +1,91 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = c045d2dcab33f80c8d3d1679974e4756ef234166
+
+### Tworzymy budynek
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Testowa",
+  "BuildingNumber": "10A",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-001"
+}
+
+###
+
+### Wypoisujemy budynki
+GET {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Tworzymy mieszkanie w budynku
+# Wklej odpowiedni BUILDING_ID 
+POST {{BASE_URL}}buildings/1/flats/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "1",
+  "FlatFloor": 1,
+  "FlatArea": 50.5,
+  "FlatStatus": true
+}
+
+###
+
+### Tworzymy usera residenta
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Jan",
+  "UserSurname": "Kowalski",
+  "UserEmail": "resident@example.com",
+  "UserPassword": "resident123"
+}
+
+###
+
+### Dodajemy mieszkanca do mieszkania
+# Wklej odpowiedni FLAT_ID i USER_ID
+POST {{BASE_URL}}buildings/1/flats/1/tenants/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": 2,
+  "UserFlatRole": "TENANT"
+}
+
+###
+
+### Dodajemy naliczenie do mieszkania
+POST {{BASE_URL}}buildings/1/flats/1/rent/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 6,
+  "RentYear": 2025,
+  "RentAmount": 1200.00,
+  "RentDateDue": "2025-06-10"
+}
+
+###
+
+### Doddajemy ogloszenie
+POST {{BASE_URL}}announ/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": 1,
+  "AnnounTitle": "Przerwa w dostawie wody",
+  "AnnounDescription": "W dniu 10.06 planowana przerwa",
+  "AnnounFrom": "2025-06-10"
+}

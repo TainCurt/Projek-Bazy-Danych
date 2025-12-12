@@ -23,7 +23,9 @@ def get_announ(request):
         if error_response:
             return error_response
         
-        serializer = AnnounSerializer(data=request.data)
+        data = request.data.copy()
+        data["UserId"] = user.UserId
+        serializer = AnnounSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -45,7 +47,9 @@ def announ_detail(request, pk):
         if error_response:
             return error_response
         
-        serializer = AnnounSerializer(announ, data=request.data)
+        data = request.data.copy()
+        data["UserId"] = announ.UserId_id
+        serializer = AnnounSerializer(announ, data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

@@ -1,0 +1,67 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = 
+@RESIDENT_TOKEN = 
+@BUILDING_ID = 
+@FLAT_ID = 
+@RENT_ID = 
+
+### Admin: lista naliczen dla mieszkania
+GET {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/rent/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: tworzymy naliczenie
+POST {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/rent/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 999.99,
+  "RentDateDue": "2025-12-10",
+  "RentStatus": "PENDING"
+}
+
+###
+
+### Admin: detale naliczenia
+GET {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/rent/{{RENT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Admin: update naliczenia - PUT (np ze status paid)
+PUT {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/rent/{{RENT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatId": {{FLAT_ID}},
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 999.99,
+  "RentDateDue": "2025-12-10",
+  "RentStatus": "PAID",
+  "RentDate": "2025-12-12"
+}
+
+###
+
+### Admin: delete naliczenia
+DELETE {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/rent/{{RENT_ID}}/
+Authorization: Token {{ADMIN_TOKEN}}
+
+###
+
+### Resident: moje naliczenia
+GET {{BASE_URL}}my/rents/
+Authorization: Token {{RESIDENT_TOKEN}}
+
+###
+
+### Resident: moje naliczenia z filtrem flat
+GET {{BASE_URL}}my/rents/?flat_id={{FLAT_ID}}
+Authorization: Token {{RESIDENT_TOKEN}}

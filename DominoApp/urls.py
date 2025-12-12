@@ -14,7 +14,7 @@ urlpatterns=[
     path('buildings/<int:building_id>/flats/', flat.building_flats),
     path('buildings/<int:building_id>/flats/<int:flat_id>/', flat.flat_detail),
     path('buildings/<int:building_id>/flats/<int:flat_id>/rent/', rent.flat_rent),
-    path('buildings/<int:building_id>/flats/<int:flat_id>/rent/<int:rent_id>/', rent.falt_rent_detail),
+    path('buildings/<int:building_id>/flats/<int:flat_id>/rent/<int:rent_id>/', rent.flat_rent_detail),
     path('buildings/<int:building_id>/flats/<int:flat_id>/tenants/', userflat.userflat_list),
     path('buildings/<int:building_id>/flats/<int:flat_id>/tenants/<int:userflat_id>/', userflat.userflat_detail),
     path('login/', auth.login),
