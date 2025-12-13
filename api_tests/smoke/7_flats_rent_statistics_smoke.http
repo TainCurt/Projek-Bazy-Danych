@@ -1,0 +1,44 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@ADMIN_TOKEN = c045d2dcab33f80c8d3d1679974e4756ef234166
+
+### Tworzymy budynek
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Testowa",
+  "BuildingNumber": "10A",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-001"
+}
+
+### Tworzymy mieszkanie w budynku
+# Wklej odpowiedni BUILDING_ID 
+POST {{BASE_URL}}buildings/1/flats/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "1",
+  "FlatFloor": 1,
+  "FlatArea": 50.5,
+  "FlatStatus": true
+}
+
+### Dodajemy naliczenie do mieszkania
+POST {{BASE_URL}}buildings/1/flats/1/rent/
+Authorization: Token {{ADMIN_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1200.00,
+  "RentDateDue": "2025-12-30"
+}
+
+### Wypisujemy opłaty dla poszczególnego mieszkania
+GET {{BASE_URL}}flatbyrentstats/
+Authorization: Token {{ADMIN_TOKEN}}
