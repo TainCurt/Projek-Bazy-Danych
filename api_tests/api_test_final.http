@@ -1,0 +1,805 @@
+### api_test_final.http
+### Scenariusz E2E backendu DominoApp
+### Założenia:
+### - baza pusta po flush
+### - istnieje ROOT ADMIN utworzony ręcznie w shellu
+
+
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+
+# ROOT admin cred
+@ROOT_ADMIN_EMAIL = admin@root.com
+@ROOT_ADMIN_PASSWORD = admin123
+
+# Później będziemy korzystać z tokenów pobranych w trakcie:
+# - ROOT_TOKEN
+# - ADMIN1_TOKEN, ADMIN2_TOKEN
+# - RES1_TOKEN, RES2_TOKEN, RES3_TOKEN, RES4_TOKEN, RES5_TOKEN, RES6_TOKEN
+
+
+### 0) NEGATYWNE: login złe hasło
+# @name login_root_bad_password
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "{{ROOT_ADMIN_EMAIL}}",
+  "UserPassword": "BAD_PASSWORD"
+}
+
+###
+
+
+### 1) Login ROOT ADMIN i token
+# @name login_root
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "{{ROOT_ADMIN_EMAIL}}",
+  "UserPassword": "{{ROOT_ADMIN_PASSWORD}}"
+}
+
+###
+@ROOT_TOKEN = {{login_root.response.body.token}}
+
+### Szybki check: /me jako ROOT
+# @name me_root
+GET {{BASE_URL}}me/
+Authorization: Token {{ROOT_TOKEN}}
+
+###
+
+
+### 2) Utworzenie 2 adminów przez ROOT
+# @name create_admin_1
+POST {{BASE_URL}}users/
+Authorization: Token {{ROOT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Admin",
+  "UserSurname": "One",
+  "UserEmail": "admin1@domino.local",
+  "UserPassword": "AdminPass1!",
+  "UserRole": "ADMIN"
+}
+
+###
+@ADMIN1_ID = {{create_admin_1.response.body.UserId}}
+
+# @name create_admin_2
+POST {{BASE_URL}}users/
+Authorization: Token {{ROOT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Admin",
+  "UserSurname": "Two",
+  "UserEmail": "admin2@domino.local",
+  "UserPassword": "AdminPass2!",
+  "UserRole": "ADMIN"
+}
+
+###
+@ADMIN2_ID = {{create_admin_2.response.body.UserId}}
+
+### Logowanie adminów
+# @name login_admin_1
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "admin1@domino.local",
+  "UserPassword": "AdminPass1!"
+}
+
+###
+@ADMIN1_TOKEN = {{login_admin_1.response.body.token}}
+
+# @name login_admin_2
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "admin2@domino.local",
+  "UserPassword": "AdminPass2!"
+}
+
+###
+@ADMIN2_TOKEN = {{login_admin_2.response.body.token}}
+
+
+### 3) NEGATYWNE: próba admin-only bez tokenu
+# @name create_building_no_auth
+POST {{BASE_URL}}buildings/
+Content-Type: application/json
+
+{
+  "BuildingStreet": "NoAuth",
+  "BuildingNumber": "1",
+  "BuildingCity": "Test",
+  "BuildingPostal": "00-000"
+}
+
+###
+
+
+### 4) Tworzymy 4 budynki (jako ADMIN1)
+# @name create_building_1
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Kwiatowa",
+  "BuildingNumber": "10A",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-001"
+}
+
+###
+@B1_ID = {{create_building_1.response.body.BuildingId}}
+
+# @name create_building_2
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Lipowa",
+  "BuildingNumber": "2",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-002"
+}
+
+###
+@B2_ID = {{create_building_2.response.body.BuildingId}}
+
+# @name create_building_3
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Morska",
+  "BuildingNumber": "7",
+  "BuildingCity": "Gdańsk",
+  "BuildingPostal": "80-001"
+}
+
+###
+@B3_ID = {{create_building_3.response.body.BuildingId}}
+
+# @name create_building_4
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Górska",
+  "BuildingNumber": "15",
+  "BuildingCity": "Kraków",
+  "BuildingPostal": "30-001"
+}
+
+###
+@B4_ID = {{create_building_4.response.body.BuildingId}}
+
+### GET lista + detale budynków
+# @name get_buildings
+GET {{BASE_URL}}buildings/
+
+###
+
+# @name get_building_detail_b1
+GET {{BASE_URL}}buildings/{{B1_ID}}/
+
+###
+
+
+### 5) Tworzymy mieszkania w budynkach (jako ADMIN1)
+### Budynek 1: 3 mieszkania
+# @name create_b1_flat_1
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "1",
+  "FlatFloor": 0,
+  "FlatArea": 45.50,
+  "FlatStatus": true
+}
+
+###
+@B1_F1 = {{create_b1_flat_1.response.body.FlatId}}
+
+# @name create_b1_flat_2
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "2",
+  "FlatFloor": 1,
+  "FlatArea": 51.00,
+  "FlatStatus": true
+}
+
+###
+@B1_F2 = {{create_b1_flat_2.response.body.FlatId}}
+
+# @name create_b1_flat_3
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "3",
+  "FlatFloor": 2,
+  "FlatArea": 62.00,
+  "FlatStatus": true
+}
+
+###
+@B1_F3 = {{create_b1_flat_3.response.body.FlatId}}
+
+### Budynek 2: 2 mieszkania
+# @name create_b2_flat_1
+POST {{BASE_URL}}buildings/{{B2_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "11",
+  "FlatFloor": 1,
+  "FlatArea": 40.00,
+  "FlatStatus": true
+}
+
+###
+@B2_F1 = {{create_b2_flat_1.response.body.FlatId}}
+
+# @name create_b2_flat_2
+POST {{BASE_URL}}buildings/{{B2_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "12",
+  "FlatFloor": 1,
+  "FlatArea": 41.50,
+  "FlatStatus": true
+}
+
+###
+@B2_F2 = {{create_b2_flat_2.response.body.FlatId}}
+
+### Budynek 3: 1 mieszkanie
+# @name create_b3_flat_1
+POST {{BASE_URL}}buildings/{{B3_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "21",
+  "FlatFloor": 2,
+  "FlatArea": 55.00,
+  "FlatStatus": true
+}
+
+###
+@B3_F1 = {{create_b3_flat_1.response.body.FlatId}}
+
+### Budynek 4: 1 mieszkanie
+# @name create_b4_flat_1
+POST {{BASE_URL}}buildings/{{B4_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "31",
+  "FlatFloor": 3,
+  "FlatArea": 70.00,
+  "FlatStatus": true
+}
+
+###
+@B4_F1 = {{create_b4_flat_1.response.body.FlatId}}
+
+### GET lista mieszkań w budynku + detal mieszkania
+# @name get_b1_flats
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/
+
+###
+
+# @name get_b1_flat_detail
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/
+
+###
+
+
+### 6) Tworzymy 6 rezydentów (jako ADMIN2)
+### - 2 z przypisanymi mieszkaniami przy tworzeniu
+### - 4 bez mieszkań
+### - co najmniej 2 mają to samo mieszkanie (B1_F2)
+
+# @name create_res_1
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Jan",
+  "UserSurname": "Kowalski",
+  "UserEmail": "res1@domino.local",
+  "UserPassword": "ResPass1!"
+}
+
+###
+@RES1_ID = {{create_res_1.response.body.UserId}}
+
+# @name create_res_2_with_same_flat_b1f2
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Anna",
+  "UserSurname": "Nowak",
+  "UserEmail": "res2@domino.local",
+  "UserPassword": "ResPass2!",
+  "Flats": [{{B1_F2}}]
+}
+
+###
+@RES2_ID = {{create_res_2_with_same_flat_b1f2.response.body.UserId}}
+
+# @name create_res_3_with_two_flats
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Piotr",
+  "UserSurname": "Zieliński",
+  "UserEmail": "res3@domino.local",
+  "UserPassword": "ResPass3!",
+  "Flats": [{{B1_F3}}, {{B2_F1}}]
+}
+
+###
+@RES3_ID = {{create_res_3_with_two_flats.response.body.UserId}}
+
+### Trzech bez mieszkań
+# @name create_res_4
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Kasia",
+  "UserSurname": "Wiśniewska",
+  "UserEmail": "res4@domino.local",
+  "UserPassword": "ResPass4!"
+}
+
+###
+@RES4_ID = {{create_res_4.response.body.UserId}}
+
+# @name create_res_5
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Tomek",
+  "UserSurname": "Wójcik",
+  "UserEmail": "res5@domino.local",
+  "UserPassword": "ResPass5!"
+}
+
+###
+@RES5_ID = {{create_res_5.response.body.UserId}}
+
+# @name create_res_6
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Ola",
+  "UserSurname": "Kaczmarek",
+  "UserEmail": "res6@domino.local",
+  "UserPassword": "ResPass6!"
+}
+
+###
+@RES6_ID = {{create_res_6.response.body.UserId}}
+
+### NEGATYWNE: przypisanie nieistniejącego mieszkania przy tworzeniu usera
+# @name create_res_bad_flat
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Bad",
+  "UserSurname": "Flat",
+  "UserEmail": "badflat@domino.local",
+  "UserPassword": "BadPass1!",
+  "Flats": [999999]
+}
+
+###
+
+### Logowanie rezydentów (żeby testować my/*)
+# @name login_res1
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "res1@domino.local",
+  "UserPassword": "ResPass1!"
+}
+
+###
+@RES1_TOKEN = {{login_res1.response.body.token}}
+
+# @name login_res2
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "res2@domino.local",
+  "UserPassword": "ResPass2!"
+}
+
+###
+@RES2_TOKEN = {{login_res2.response.body.token}}
+
+# @name login_res3
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "res3@domino.local",
+  "UserPassword": "ResPass3!"
+}
+
+###
+@RES3_TOKEN = {{login_res3.response.body.token}}
+
+# @name login_res4
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "res4@domino.local",
+  "UserPassword": "ResPass4!"
+}
+
+###
+@RES4_TOKEN = {{login_res4.response.body.token}}
+
+
+### 7) Przypisania OWNER/TENANT (UserFlat) + reguła 2 ownerów
+
+### Tworzymy OWNER dla mieszkania B1_F2 (np. RES1)
+# @name set_owner_b1f2_res1
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{RES1_ID}},
+  "UserFlatRole": "OWNER"
+}
+
+###
+@UF_OWNER_B1F2 = {{set_owner_b1f2_res1.response.body.UserFlatId}}
+
+
+### NEGATYWNE: próba dodania drugiego OWNER aktywnego -> 400 (RES2 jest automatycznie przypisywany jako TENNANT do tego mieszkania wiec to i tak by nie dzialalo ale chodzi o demo)
+# @name set_second_owner_should_fail
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{RES2_ID}},
+  "UserFlatRole": "OWNER"
+}
+
+###
+
+### GET lista przypisań tenants dla B1_F2
+# @name get_tenants_b1f2
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+
+###
+
+
+### 8) /me + /my/flats (rezydent)
+# @name me_res1
+GET {{BASE_URL}}me/
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+# @name my_flats_res1
+GET {{BASE_URL}}my/flats/
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+# @name my_flats_res4_should_be_empty
+GET {{BASE_URL}}my/flats/
+Authorization: Token {{RES4_TOKEN}}
+
+###
+
+
+### 9) Naliczenia opłat (Rent) + widok rezydenta
+
+### Admin dodaje naliczenie dla B1_F2 (PENDING)
+# @name create_rent_b1f2_pending
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1500.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PENDING"
+}
+
+###
+@RENT1_ID = {{create_rent_b1f2_pending.response.body.RentId}}
+
+### Admin dodaje naliczenie PAID dla B1_F3 (dla RES3)
+# @name create_rent_b1f3_paid
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F3}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1200.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PAID",
+  "RentDate": "2025-12-10"
+}
+
+###
+@RENT2_ID = {{create_rent_b1f3_paid.response.body.RentId}}
+
+### Rezydent RES1 pobiera swoje naliczenia (powinien widzieć B1_F2)
+# @name my_rents_res1
+GET {{BASE_URL}}my/rents/
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+### Rezydent RES1 filtruje po swoim flat_id (OK)
+# @name my_rents_res1_filter_ok
+GET {{BASE_URL}}my/rents/?flat_id={{B1_F2}}
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+### NEGATYWNE: rezydent RES1 filtruje po cudzym lokalu -> 403
+# @name my_rents_res1_filter_forbidden
+GET {{BASE_URL}}my/rents/?flat_id={{B4_F1}}
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+
+### 10) Zgłoszenia (Reports): resident tworzy, admin zarządza
+
+### GENERAL report (RES1)
+# @name create_report_general_res1
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "GENERAL",
+  "ReportTitle": "Info ogólne",
+  "ReportDescription": "Test zgłoszenia ogólnego",
+  "ReportCategory": "INFO"
+}
+
+###
+@R_GENERAL_ID = {{create_report_general_res1.response.body.ReportId}}
+
+### FLAT report (RES1) - na swoim lokalu B1_F2
+# @name create_report_flat_res1
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{B1_F2}},
+  "ReportTitle": "Usterka w mieszkaniu",
+  "ReportDescription": "Cieknący kran",
+  "ReportCategory": "TECH"
+}
+
+###
+@R_FLAT_ID = {{create_report_flat_res1.response.body.ReportId}}
+
+### NEGATYWNE: FLAT report na cudzym lokalu -> 403
+# @name create_report_flat_forbidden
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{B4_F1}},
+  "ReportTitle": "Nie powinno przejść",
+  "ReportDescription": "Brak dostępu",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### BUILDING report (RES1) - budynek B1 (ma tam lokal)
+# @name create_report_building_res1
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{B1_ID}},
+  "ReportTitle": "Usterka w budynku",
+  "ReportDescription": "Nie działa domofon",
+  "ReportCategory": "TECH"
+}
+
+###
+@R_BUILDING_ID = {{create_report_building_res1.response.body.ReportId}}
+
+### NEGATYWNE: BUILDING report w budynku gdzie nie ma lokalu -> 403
+# @name create_report_building_forbidden
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{B4_ID}},
+  "ReportTitle": "Nie powinno przejść",
+  "ReportDescription": "Brak dostępu",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### Admin: lista wszystkich reportów
+# @name admin_get_reports_all
+GET {{BASE_URL}}reports/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### Admin: filtr status=WAITING
+# @name admin_get_reports_waiting
+GET {{BASE_URL}}reports/?status=WAITING
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### Admin: zmiana statusu (PUT tylko ReportStatus)
+# @name admin_update_report_status_done
+PUT {{BASE_URL}}reports/{{R_FLAT_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "DONE"
+}
+
+###
+
+### Admin: i znowu filtr status=WAITING będą tylko 2 zgłoszenia bo jedno zmieniliśmy
+# @name admin_get_reports_waiting
+GET {{BASE_URL}}reports/?status=WAITING
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### NEGATYWNE: resident próbuje wejść w admin /reports -> 403
+# @name resident_reports_forbidden
+GET {{BASE_URL}}reports/
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+
+### 11) Ogłoszenia (Announ)
+
+# @name admin_create_announcement
+POST {{BASE_URL}}announ/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "AnnounTitle": "Przerwa w dostawie wody",
+  "AnnounDescription": "W dniu 2025-12-18 planowana przerwa w dostawie wody.",
+  "AnnounFrom": "2025-12-18",
+  "AnnounTo": "2025-12-18"
+}
+
+###
+@ANNOUN_ID = {{admin_create_announcement.response.body.AnnounId}}
+
+### Resident pobiera listę ogłoszeń
+# @name resident_get_announ
+GET {{BASE_URL}}announ/
+
+###
+
+
+### 12) Statystyki (Z1-Z3) + kontrola dostępu
+
+### Z2: zaległości wg budynków
+# @name admin_rentstats
+GET {{BASE_URL}}rentstats/?month=12&year=2025
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### Z1: lokale z wysokimi zaległościami (threshold)
+# @name admin_flatsrentstats
+GET {{BASE_URL}}flatsrentstats/?threshold=1000
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### Z3: statystyki zgłoszeń budynkowych
+# @name admin_reportstats
+GET {{BASE_URL}}reportstats/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### NEGATYWNE: resident próbuje statystyki -> 403
+# @name resident_rentstats_forbidden
+GET {{BASE_URL}}rentstats/?month=12&year=2025
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+
+### 13) CRUD na użytkowniku (PATCH + DELETE) jako admin
+
+### PATCH: zmiana nazwiska rezydenta RES6
+# @name admin_patch_user
+PATCH {{BASE_URL}}users/{{RES6_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserSurname": "Kaczmarek-Updated"
+}
+
+###
+
+### DELETE: usuń rezydenta RES5
+# @name admin_delete_user
+DELETE {{BASE_URL}}users/{{RES5_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### Koniec scenariusza

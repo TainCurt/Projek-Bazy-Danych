@@ -205,63 +205,90 @@ def my_reports(request):
 
     elif request.method == 'POST':
         data = request.data.copy()
+
+        # Serwer kontroluje autora i status
         data['UserId'] = user.UserId
         data.pop('ReportStatus', None)
+        data.pop('UserId', None)  # jesli priba narzucenia i tak to ignorujemy
+        data['UserId'] = user.UserId
 
         report_type = data.get('ReportType', 'GENERAL')
-        errors = {}
 
+        # FLAT
         if report_type == 'FLAT':
             flat_id = data.get('FlatId')
-
             if not flat_id:
-                errors['FlatId'] = ['FlatId is required for FLAT reports.']
-            else:
-                try:
-                    flat = Flat.objects.get(pk=flat_id)
-                except Flat.DoesNotExist:
-                    errors['FlatId'] = ['Flat does not exist.']
-                else:
-                    has_relation = UserFlat.objects.filter(
-                        UserId=user,
-                        FlatId=flat,
-                        UserFlatDateTo__isnull=True
-                    ).exists()
-                    if not has_relation:
-                        errors['FlatId'] = ['You are not assigned to this flat.']
-                    else:
-                        data['BuildingId'] = flat.BuildingId_id
+                return Response(
+                    {'FlatId': ['FlatId is required for FLAT reports.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+            try:
+                flat = Flat.objects.get(pk=flat_id)
+            except Flat.DoesNotExist:
+                return Response(
+                    {'FlatId': ['Flat does not exist.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Dostep: aktywna relacja do lokalu (OWNER lub TENANT)
+            has_relation = UserFlat.objects.filter(
+                UserId=user,
+                FlatId=flat,
+                UserFlatDateTo__isnull=True,
+                UserFlatRole__in=['OWNER', 'TENANT']
+            ).exists()
+            if not has_relation:
+                return Response(
+                    {'error': 'You are not assigned to this flat.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Uzupelnij budynek na podstawie lokalu
+            data['BuildingId'] = flat.BuildingId_id
+
+        # BUILDING
         elif report_type == 'BUILDING':
             building_id = data.get('BuildingId')
-
             if not building_id:
-                errors['BuildingId'] = ['BuildingId is required for BUILDING reports.']
-            else:
-                try:
-                    building = Building.objects.get(pk=building_id)
-                except Building.DoesNotExist:
-                    errors['BuildingId'] = ['Building does not exist.']
-                else:
-                    has_flat_in_building = UserFlat.objects.filter(
-                        UserId=user,
-                        FlatId__BuildingId=building,
-                        UserFlatDateTo__isnull=True
-                    ).exists()
-                    if not has_flat_in_building:
-                        errors['BuildingId'] = ['You have no flat in this building.']
+                return Response(
+                    {'BuildingId': ['BuildingId is required for BUILDING reports.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
+            try:
+                building = Building.objects.get(pk=building_id)
+            except Building.DoesNotExist:
+                return Response(
+                    {'BuildingId': ['Building does not exist.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Dostep: user ma jakikolwiek aktywny lokal w tym budynku
+            has_flat_in_building = UserFlat.objects.filter(
+                UserId=user,
+                FlatId__BuildingId=building,
+                UserFlatDateTo__isnull=True
+            ).exists()
+            if not has_flat_in_building:
+                return Response(
+                    {'error': 'You have no flat in this building.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # BUILDING report nie powinien miec FlatId
             data.pop('FlatId', None)
 
+        # GENERAL
         elif report_type == 'GENERAL':
             data.pop('FlatId', None)
             data.pop('BuildingId', None)
 
         else:
-            errors['ReportType'] = ['Invalid ReportType. Use FLAT, BUILDING or GENERAL.']
-
-        if errors:
-            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'ReportType': ['Invalid ReportType. Use FLAT, BUILDING or GENERAL.']},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         serializer = ReportSerializer(data=data)
         if serializer.is_valid():

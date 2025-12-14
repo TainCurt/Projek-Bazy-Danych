@@ -2,9 +2,9 @@
 @BASE_URL = http://127.0.0.1:8000/dominoapp/
 @ADMIN_TOKEN = 
 @RESIDENT_TOKEN = 
-@BUILDING_ID = 
-@FLAT_ID = 
-@RENT_ID = 
+@BUILDING_ID = 1
+@FLAT_ID = 1
+@RENT_ID = 99
 
 ### Admin: lista naliczen dla mieszkania
 GET {{BASE_URL}}buildings/{{BUILDING_ID}}/flats/{{FLAT_ID}}/rent/

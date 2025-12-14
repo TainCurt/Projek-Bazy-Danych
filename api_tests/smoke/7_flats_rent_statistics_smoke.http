@@ -1,6 +1,8 @@
 ### CONFIG
 @BASE_URL = http://127.0.0.1:8000/dominoapp/
-@ADMIN_TOKEN = c045d2dcab33f80c8d3d1679974e4756ef234166
+@ADMIN_TOKEN = 11a4be82b49191741a7d19d219a3542555011209
+@RESIDENT_TOKEN = f9588e626501f47d37d8394720bb9179a626e6f8
+@THRESHOLD = 2000
 
 ### Tworzymy budynek
 POST {{BASE_URL}}buildings/
@@ -28,6 +30,7 @@ Content-Type: application/json
 }
 
 ### Dodajemy naliczenie do mieszkania
+# Wklej odpowiedni BUILDING_ID i FLAT_ID
 POST {{BASE_URL}}buildings/1/flats/1/rent/
 Authorization: Token {{ADMIN_TOKEN}}
 Content-Type: application/json
@@ -39,6 +42,18 @@ Content-Type: application/json
   "RentDateDue": "2025-12-30"
 }
 
-### Wypisujemy opłaty dla poszczególnego mieszkania
+### Wypisujemy oplaty dla poszczegolnego mieszkania z default threshold = 2000
 GET {{BASE_URL}}flatbyrentstats/
 Authorization: Token {{ADMIN_TOKEN}}
+
+### Tutaj wypisujemy tylko ze z customowym threshholdem 
+GET {{BASE_URL}}flatsrentstats/?threshold={{THRESHOLD}}
+Authorization: Token {{ADMIN_TOKEN}}
+
+### invalid threshold
+GET {{BASE_URL}}flatsrentstats/?threshold=abc
+Authorization: Token {{ADMIN_TOKEN}}
+
+### Powinno byc 403 bo token rezydenta
+GET {{BASE_URL}}flatsrentstats/
+Authorization: Token {{RESIDENT_TOKEN}}

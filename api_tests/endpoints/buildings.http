@@ -1,6 +1,6 @@
 ### CONFIG
 @BASE_URL = http://127.0.0.1:8000/dominoapp/
-@ADMIN_TOKEN = 
+@ADMIN_TOKEN = 11a4be82b49191741a7d19d219a3542555011209
 @BUILDING_ID = 
 
 ### Wypisanie budynkow
@@ -18,7 +18,7 @@ Content-Type: application/json
   "BuildingStreet": "Kwiatowa",
   "BuildingNumber": "15",
   "BuildingCity": "Warszawa",
-  "BuildingPostal": "00-002"
+  "BuildingPostal": "00-003"
 }
 
 ###

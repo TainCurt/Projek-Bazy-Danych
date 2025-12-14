@@ -5,3 +5,24 @@ UserPassword=make_password("admin123"),
 UserRole=UserRole.ADMIN,
 UserDate=datetime.date(2025, 12, 12),
 UserStatus=True
+
+Jesli chcemy dodac pierwszego admina po flush:
+python manage.py shell
+ 
+i pozniej
+
+from DominoApp.models import User, UserRole
+from django.contrib.auth.hashers import make_password
+import datetime
+
+admin = User.objects.create(
+    UserName="Admin",
+    UserSurname="Root",
+    UserEmail="admin@root.com",
+    UserPassword=make_password("admin123"),
+    UserRole=UserRole.ADMIN,
+    UserDate=datetime.date.today(),
+    UserStatus=True
+)
+
+admin.UserId

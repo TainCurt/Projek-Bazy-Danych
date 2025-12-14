@@ -1,7 +1,7 @@
 ### CONFIG
 @BASE_URL = http://127.0.0.1:8000/dominoapp/
-@ADMIN_TOKEN = 
-@BUILDING_ID = 
+@ADMIN_TOKEN = 11a4be82b49191741a7d19d219a3542555011209
+@BUILDING_ID = 2
 @FLAT_ID = 
 
 ### Wypisujemy mieszkania w budynku
@@ -16,8 +16,8 @@ Authorization: Token {{ADMIN_TOKEN}}
 Content-Type: application/json
 
 {
-  "FlatNumber": "101",
-  "FlatFloor": 1,
+  "FlatNumber": "2",
+  "FlatFloor": 2,
   "FlatArea": 48.75,
   "FlatStatus": true
 }

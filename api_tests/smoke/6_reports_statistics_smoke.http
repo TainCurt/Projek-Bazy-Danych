@@ -1,6 +1,7 @@
 ### CONFIG
 @BASE_URL = http://127.0.0.1:8000/dominoapp/
-@ADMIN_TOKEN = c045d2dcab33f80c8d3d1679974e4756ef234166
+@ADMIN_TOKEN = 11a4be82b49191741a7d19d219a3542555011209
+@RESIDENT_TOKEN = f9588e626501f47d37d8394720bb9179a626e6f8
 
 ### Tworzymy budynek
 POST {{BASE_URL}}buildings/
@@ -52,19 +53,23 @@ Content-Type: application/json
   "FlatStatus": true
 }
 
-### Create BUILDING report
+### Tworzymy BUILDING report dla tych dwoch budynkow, rezydent musi miec mieszkanie w tym budynku
 POST {{BASE_URL}}my/reports/
-Authorization: Token {{ADMIN_TOKEN}}
+Authorization: Token {{RESIDENT_TOKEN}}
 Content-Type: application/json
 
 {
   "ReportType": "BUILDING",
-  "BuildingId": {{BUILDING_ID}},
+  "BuildingId": 2,
   "ReportTitle": "Problem w budynku",
-  "ReportDescription": "Nie działa winda",
+  "ReportDescription": "Nie działa smietnik",
   "ReportCategory": "Techniczne"
 }
 
-### Wypisujemy zgłoszenia dla poszczególnych budynków
+### Wypisujemy zgloszenia dla poszczegolnych budynkow a konkretniej statystyke rozbita na statusy
 GET {{BASE_URL}}reportstats/
 Authorization: Token {{ADMIN_TOKEN}}
+
+### Tutaj probujemy tego samego z tokenem rezydenta powinno byc 403
+GET {{BASE_URL}}reportstats/
+Authorization: Token {{RESIDENT_TOKEN}}

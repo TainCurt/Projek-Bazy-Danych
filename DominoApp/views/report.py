@@ -70,8 +70,10 @@ def reports_detail(request, pk):
         return Response(serializer.data)
     
     elif request.method == 'PUT':
-        # Admin może zmieniać TYLKO status zgłoszenia
+        # Admin moze zmieniac TYLKO status zgloszenia
         new_status = request.data.get('ReportStatus')
+        if new_status:
+            new_status = new_status.upper()
 
         if not new_status:
             return Response(

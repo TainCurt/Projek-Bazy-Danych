@@ -2,7 +2,7 @@ from math import fabs
 import stat
 from tarfile import data_filter
 from urllib import response
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404
 from django.urls import is_valid_path
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -16,15 +16,9 @@ from DominoApp.utils import get_authenticated_user
 @api_view(['GET', 'POST'])
 def userflat_list(request, building_id, flat_id):
 
-    try:
-        building = Building.objects.get(pk=building_id)
-    except Building.DoesNotExist:
-        return Response({"error": "Building not found"}, status=404)
+    building = get_object_or_404(Building, pk=building_id)
+    flat = get_object_or_404(Flat, pk=flat_id, BuildingId=building)
 
-    try:
-        flat = Flat.objects.get(pk=flat_id, BuildingId=building)
-    except Flat.DoesNotExist:
-        return Response({"error": "Flat not found in this building"}, status=404)
     
     if request.method == 'GET':
         userflats = UserFlat.objects.filter(FlatId=flat)
@@ -66,20 +60,10 @@ def userflat_list(request, building_id, flat_id):
 @api_view(['GET', 'PUT', 'DELETE'])
 def userflat_detail(request, building_id, flat_id, userflat_id):
 
-    try:
-        building = Building.objects.get(pk=building_id)
-    except Building.DoesNotExist:
-        return Response({"error": "Building not found"}, status=404)
-    
-    try:
-        flat = Flat.objects.get(pk=flat_id, BuildingId=building)
-    except Flat.DoesNotExist:
-        return Response({"error": "Flat not found in this building"}, status=404)
+    building = get_object_or_404(Building, pk=building_id)
+    flat = get_object_or_404(Flat, pk=flat_id, BuildingId=building)
+    userflat = get_object_or_404(UserFlat, pk=userflat_id, FlatId=flat)
 
-    try:
-        userflat = UserFlat.objects.get(pk=userflat_id, FlatId=flat)
-    except UserFlat.DoesNotExist:
-        return Response({"error": "UserFlat not found for this flat"}, status=404)
 
     if request.method == 'GET':
         serializer = UserFlatSerializer(userflat)

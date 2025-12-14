@@ -1,0 +1,46 @@
+### CONFIG
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+@RESIDENT_TOKEN = f9588e626501f47d37d8394720bb9179a626e6f8
+@FLAT_ID = 1
+@BUILDING_ID = 1
+
+### Create FLAT report – NO ACCESS (should be 403)
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{FLAT_ID}},
+  "ReportTitle": "Flat test no access",
+  "ReportDescription": "Should fail with 403",
+  "ReportCategory": "TECH"
+}
+
+### Create BUILDING report – NO ACCESS (should be 403)
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{BUILDING_ID}},
+  "ReportTitle": "Building test no access",
+  "ReportDescription": "Should fail with 403",
+  "ReportCategory": "TECH"
+}
+
+### Create GENERAL report – FK should be ignored
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RESIDENT_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "GENERAL",
+  "FlatId": {{FLAT_ID}},
+  "BuildingId": {{BUILDING_ID}},
+  "ReportTitle": "General with FK",
+  "ReportDescription": "FK should be removed",
+  "ReportCategory": "INFO"
+}
+

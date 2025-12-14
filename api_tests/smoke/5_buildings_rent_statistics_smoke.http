@@ -1,6 +1,6 @@
 ### CONFIG
 @BASE_URL = http://127.0.0.1:8000/dominoapp/
-@ADMIN_TOKEN = c045d2dcab33f80c8d3d1679974e4756ef234166
+@ADMIN_TOKEN = 11a4be82b49191741a7d19d219a3542555011209
 
 ### Tworzymy budynek
 POST {{BASE_URL}}buildings/
@@ -9,14 +9,14 @@ Content-Type: application/json
 
 {
   "BuildingStreet": "Testowa",
-  "BuildingNumber": "10A",
+  "BuildingNumber": "20A",
   "BuildingCity": "Warszawa",
-  "BuildingPostal": "00-001"
+  "BuildingPostal": "00-002"
 }
 
 ### Tworzymy mieszkanie w budynku
 # Wklej odpowiedni BUILDING_ID 
-POST {{BASE_URL}}buildings/1/flats/
+POST {{BASE_URL}}buildings/2/flats/
 Authorization: Token {{ADMIN_TOKEN}}
 Content-Type: application/json
 
@@ -28,7 +28,7 @@ Content-Type: application/json
 }
 
 ### Dodajemy naliczenie do mieszkania
-POST {{BASE_URL}}buildings/1/flats/1/rent/
+POST {{BASE_URL}}buildings/2/flats/2/rent/
 Authorization: Token {{ADMIN_TOKEN}}
 Content-Type: application/json
 
@@ -39,6 +39,18 @@ Content-Type: application/json
   "RentDateDue": "2025-12-30"
 }
 
-### Wypisujemy opłaty dla poszczególnych budynków
+### Wypisujemy oplaty dla poszczegolnych budynkow bez podanego okresu wiec automatycznie bierze bierzacy
 GET {{BASE_URL}}rentstats/
 Authorization: Token {{ADMIN_TOKEN}}
+
+### Wypisujemy oplaty dla poszczegolnych budynkow z konkretnym periodem
+GET {{BASE_URL}}rentstats/?month=11&year=2025
+Authorization: Token {{ADMIN_TOKEN}}
+
+### Blad zly miesiac
+GET {{BASE_URL}}rentstats/?month=abc&year=2025
+Authorization: Token {{ADMIN_TOKEN}}
+
+### Blad zly rok
+GET {{BASE_URL}}rentstats/?month=12&year=abc
+Authorization: Token {{ADMIN_TOKEN}
