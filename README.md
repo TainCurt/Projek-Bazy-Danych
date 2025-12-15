@@ -41,7 +41,7 @@ Encja reprezentuje opłaty czynszowe naliczane dla mieszkań w określonym miesi
 Przechowuje informacje o kwocie, terminie płatności oraz aktualnym statusie opłaty.  
 Umożliwia kontrolę należności i zaległości finansowych.
 
-### Report
+#### Report
 Encja służy do zgłaszania problemów i uwag przez użytkowników systemu.  
 Zgłoszenia mogą dotyczyć konkretnego mieszkania, budynku lub mieć charakter ogólny.  
 Przechowywane są informacje o typie, treści oraz statusie zgłoszenia.
@@ -110,6 +110,45 @@ Pozwala to określić z góry role jakie może przyjąć dany użytkownik
 - Funkcja ***\_\_str\_\_(self)*** umożliwia lepsze wyświetlanie rekordów bazy danych w celu wygodniejszego testowania. 
 
 ## Serializery
+Serializery to mechanizm służący do zamiany danych pomiędzy obiektami Pythona a formatami używanymi w API w przypadku serwisu Domino jest to JSON.
 
+### Struktura
+Struktura serializerów wygląda następująco: 
+```python
+    class Serializer(serializers.ModelSerializer)
+        class Meta:
+        model = Encja
+        fields = '__all__'
+```
+Weźmy pod lupę serializer dla encji User
+```python
+    class UserSerializer(serializers.ModelSerializer):
+        Flats = serializers.PrimaryKeyRelatedField(
+            many=True,
+            queryset=Flat.objects.all(),
+            required=False
+        )
+    
+        class Meta:
+            model = User
+            fields = '__all__'
+            extra_kwargs = {
+                'UserPassword' : {'write_only': True},
+                'UserRole' : {"required": False},
+                'UserDate': {'read_only': True}
+            }
+    
+        def create(self, validated_data):
+            ...
+        def update(self, instance, validated_data):
+            ...
+```
+Serializer encji User różni się od innych tym, że posiada funkcje ***create*** oraz ***update*** oraz posiada wewnętrzny serializer ***Flat***. Wszystkie te dodatkowe rzeczy służą do implementacji relacji Many-To-Many z encją flat. 
+Opisując strukture typowego serializera możemy wyróżnić
+- klasa ***Meta*** służąca do konfiguracji serializera
+  - ***model***  - mówi z jakiego modelu serialazer będzie pobierał atrybuty
+  - ***fields*** - mówi o tym jakie pola będą pobierane
+
+## CRUD oraz specjalne zapytania
 
 
