@@ -110,6 +110,42 @@ Content-Type: application/json
 ###
 @ADMIN2_TOKEN = {{login_admin_2.response.body.token}}
 
+### Zmiana hasła przez admina 2
+# @name admin_2_password_change
+PATCH {{BASE_URL}}users/{{ADMIN2_ID}}/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+    "UserPassword": "NoweHasło"
+}
+
+###
+
+# NEGATYWNE: hasło zostało zmienione
+# @name login_admin_2_with_prev_password
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "admin2@domino.local",
+  "UserPassword": "AdminPass2!"
+}
+
+###
+
+# @name login_admin_2_with_changed_password
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{
+  "UserEmail": "admin2@domino.local",
+  "UserPassword": "NoweHasło"
+}
+
+###
+
+@ADMIN2_TOKEN = {{login_admin_2.response.body.token}}
 
 ### 3) NEGATYWNE: próba admin-only bez tokenu
 # @name create_building_no_auth
@@ -186,6 +222,23 @@ Content-Type: application/json
 
 ###
 @B4_ID = {{create_building_4.response.body.BuildingId}}
+
+###
+
+# NEGATYWNE: próba utworzenia budynku o identycznym adresie co już istniejący
+# @name create_building_duplicate
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Górska",
+  "BuildingNumber": "15",
+  "BuildingCity": "Kraków",
+  "BuildingPostal": "30-001"
+}
+
+###
 
 ### GET lista + detale budynków
 # @name get_buildings
@@ -307,6 +360,22 @@ Content-Type: application/json
 }
 
 ###
+
+### Budynek nieistniejący
+# @name create_non-existing_building_flat
+POST {{BASE_URL}}buildings/9999999/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatNumber": "31",
+  "FlatFloor": 3,
+  "FlatArea": 70.00,
+  "FlatStatus": true
+}
+
+###
+
 @B4_F1 = {{create_b4_flat_1.response.body.FlatId}}
 
 ### GET lista mieszkań w budynku + detal mieszkania
@@ -559,7 +628,25 @@ Content-Type: application/json
 }
 
 ###
+
 @RENT1_ID = {{create_rent_b1f2_pending.response.body.RentId}}
+
+### NEGATYWNE: Admin dodaje naliczenie ujemne naliczenie
+# @name create_minus_rent__pending
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": -1500.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PENDING"
+}
+
+###
+
 
 ### Admin dodaje naliczenie PAID dla B1_F3 (dla RES3)
 # @name create_rent_b1f3_paid
@@ -669,6 +756,38 @@ Content-Type: application/json
 ###
 @R_BUILDING_ID = {{create_report_building_res1.response.body.ReportId}}
 
+# @name create_report_building_res2
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES3_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{B2_ID}},
+  "ReportTitle": "Usterka w budynku",
+  "ReportDescription": "Nie działa domofon",
+  "ReportCategory": "TECH"
+}
+
+###
+
+# @name create_report2_building_res2
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES3_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{B2_ID}},
+  "ReportTitle": "Usterka w budynku",
+  "ReportDescription": "Nie działa domofon",
+  "ReportCategory": "TECH"
+}
+
+###
+
+@R_BUILDING2_ID = {{create_report2_building_res2.response.body.ReportId}}
+
 ### NEGATYWNE: BUILDING report w budynku gdzie nie ma lokalu -> 403
 # @name create_report_building_forbidden
 POST {{BASE_URL}}my/reports/
@@ -684,6 +803,36 @@ Content-Type: application/json
 }
 
 ###
+
+# admin zmienia status zgłoszenia o budynek na done
+# @name admin_update_report_status_done
+PUT {{BASE_URL}}reports/{{R_BUILDING2_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "DONE"
+}
+
+###
+
+
+### NEGATYWNE: ReportType poza GENERAL, FLAT, BUILDING
+# @name create_report_wrong_type
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "OUTSIDE",
+  "BuildingId": {{B4_ID}},
+  "ReportTitle": "Nie powinno przejść",
+  "ReportDescription": "Brak dostępu",
+  "ReportCategory": "Brama"
+}
+
+###
+
 
 ### Admin: lista wszystkich reportów
 # @name admin_get_reports_all
@@ -711,7 +860,7 @@ Content-Type: application/json
 
 ###
 
-### Admin: i znowu filtr status=WAITING będą tylko 2 zgłoszenia bo jedno zmieniliśmy
+### Admin: i znowu filtr status=WAITING będą tylko 3 zgłoszenia bo jedno zmieniliśmy
 # @name admin_get_reports_waiting
 GET {{BASE_URL}}reports/?status=WAITING
 Authorization: Token {{ADMIN1_TOKEN}}
@@ -727,7 +876,7 @@ Authorization: Token {{RES1_TOKEN}}
 
 
 ### 11) Ogłoszenia (Announ)
-
+# admin dodaje dwa ogłoszenia
 # @name admin_create_announcement
 POST {{BASE_URL}}announ/
 Authorization: Token {{ADMIN2_TOKEN}}
@@ -742,6 +891,21 @@ Content-Type: application/json
 
 ###
 @ANNOUN_ID = {{admin_create_announcement.response.body.AnnounId}}
+
+# @name admin_create_announcement
+POST {{BASE_URL}}announ/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "AnnounTitle": "Przerwa w dostawie prądu",
+  "AnnounDescription": "W dniu 2025-12-18 planowana przerwa w dostawie prądu.",
+  "AnnounFrom": "2025-12-13",
+  "AnnounTo": "2025-12-13"
+}
+
+###
+
 
 ### Resident pobiera listę ogłoszeń
 # @name resident_get_announ

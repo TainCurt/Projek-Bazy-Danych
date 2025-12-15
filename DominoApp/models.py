@@ -1,8 +1,12 @@
+from decimal import Decimal
+from encodings import unicode_escape
+from enum import unique
 from itertools import chain
 from pyexpat import model
 import time
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator
 
 class UserRole(models.TextChoices):
     ADMIN = 'ADMIN', 'Administrator'
@@ -32,6 +36,9 @@ class Building(models.Model):
     BuildingNumber = models.CharField(max_length=10)
     BuildingCity = models.CharField(max_length=50)
     BuildingPostal = models.CharField(max_length=10)
+
+    class Meta:
+        unique_together = ('BuildingStreet', 'BuildingNumber', 'BuildingCity', 'BuildingPostal' )
 
     def __str__(self):
         return f"{self.BuildingStreet} {self.BuildingNumber} {self.BuildingCity}"
@@ -85,7 +92,7 @@ class Rent(models.Model):
     FlatId = models.ForeignKey(Flat, on_delete=models.CASCADE, related_name='rents')
     RentMonth = models.SmallIntegerField()
     RentYear = models.SmallIntegerField()
-    RentAmount = models.DecimalField(max_digits=12,  decimal_places=2)
+    RentAmount = models.DecimalField(max_digits=12,  decimal_places=2, validators=[MinValueValidator(Decimal('0.00'))])
     RentDateDue = models.DateField()
     RentStatus = models.CharField(max_length=10, choices=RentStatus.choices, default=RentStatus.PENDING)
     RentDate = models.DateField(null=True, blank=True)
