@@ -55,6 +55,7 @@ Umożliwia przekazywanie istotnych informacji mieszkańcom.
 Encja przechowuje tokeny uwierzytelniające przypisane do użytkowników systemu.  
 Służy do autoryzacji dostępu do API oraz identyfikacji aktywnych sesji użytkowników.  
 Każdy token posiada unikalny klucz oraz datę utworzenia.
+Jest to encja stricte techniczna nie traktujemy jej jako logicznego elementu systemu.
 
 ### Struktura kodu
 
