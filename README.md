@@ -152,4 +152,162 @@ Opisując strukture typowego serializera możemy wyróżnić
 
 ## CRUD oraz specjalne zapytania
 
+Backend aplikacji Domino udostępnia zestaw endpointów umożliwiających realizację operacji CRUD (Create, Read, Update, Delete) oraz zapytań specjalnych wynikających z logiki biznesowej systemu. Dostęp do poszczególnych zasobów jest kontrolowany na podstawie roli użytkownika.
+
+---
+
+### Użytkownicy (User)
+
+- **GET `/users/`**  
+  Pobranie listy wszystkich użytkowników systemu.
+
+- **POST `/users/`** *(ADMIN)*  
+  Utworzenie nowego użytkownika.  
+  Podczas tworzenia możliwe jest przypisanie użytkownika do mieszkań – w takim przypadku automatycznie otrzymuje on rolę **TENANT**.
+
+- **GET `/users/{id}/`** *(ADMIN)*  
+  Pobranie szczegółowych informacji o użytkowniku.
+
+- **PATCH `/users/{id}/`** *(ADMIN)*  
+  Częściowa aktualizacja danych użytkownika (np. zmiana hasła, nazwiska).
+
+- **DELETE `/users/{id}/`** *(ADMIN)*  
+  Usunięcie użytkownika z systemu.
+
+---
+
+### Budynki (Building)
+
+- **GET `/buildings/`**  
+  Pobranie listy budynków.
+
+- **POST `/buildings/`** *(ADMIN)*  
+  Utworzenie nowego budynku.  
+  System zapobiega duplikacji budynków o identycznym adresie.
+
+- **GET `/buildings/{id}/`**  
+  Pobranie szczegółowych danych budynku.
+
+- **PUT `/buildings/{id}/`** *(ADMIN)*  
+  Aktualizacja danych budynku.
+
+- **DELETE `/buildings/{id}/`** *(ADMIN)*  
+  Usunięcie budynku wraz z powiązanymi danymi.
+
+---
+
+### Mieszkania (Flat)
+
+- **GET `/buildings/{building_id}/flats/`**  
+  Pobranie listy mieszkań w danym budynku.
+
+- **POST `/buildings/{building_id}/flats/`** *(ADMIN)*  
+  Dodanie nowego mieszkania do budynku.
+
+- **GET `/buildings/{building_id}/flats/{flat_id}/`**  
+  Pobranie szczegółów mieszkania.
+
+- **PUT `/buildings/{building_id}/flats/{flat_id}/`** *(ADMIN)*  
+  Aktualizacja danych mieszkania.
+
+- **DELETE `/buildings/{building_id}/flats/{flat_id}/`** *(ADMIN)*  
+  Usunięcie mieszkania.
+
+---
+
+### Przypisania użytkowników do mieszkań (UserFlat)
+
+- **GET `/buildings/{building_id}/flats/{flat_id}/tenants/`**  
+  Pobranie listy przypisań użytkowników do mieszkania (historia).
+
+- **POST `/buildings/{building_id}/flats/{flat_id}/tenants/`** *(ADMIN)*  
+  Przypisanie użytkownika do mieszkania jako **TENANT** lub **OWNER**.  
+  System wymusza istnienie tylko jednego aktywnego właściciela (**OWNER**) na mieszkanie.
+
+- **GET `/buildings/{building_id}/flats/{flat_id}/tenants/{userflat_id}/`**  
+  Pobranie szczegółów przypisania.
+
+- **PUT `/buildings/{building_id}/flats/{flat_id}/tenants/{userflat_id}/`** *(ADMIN)*  
+  Aktualizacja przypisania (np. zmiana roli).
+
+- **DELETE `/buildings/{building_id}/flats/{flat_id}/tenants/{userflat_id}/`** *(ADMIN)*  
+  Usunięcie przypisania użytkownika do mieszkania.
+
+---
+
+### Opłaty czynszowe (Rent)
+
+- **GET `/buildings/{building_id}/flats/{flat_id}/rent/`**  
+  Pobranie listy naliczeń dla mieszkania.
+
+- **POST `/buildings/{building_id}/flats/{flat_id}/rent/`** *(ADMIN)*  
+  Dodanie nowego naliczenia czynszu.
+
+- **GET `/buildings/{building_id}/flats/{flat_id}/rent/{rent_id}/`**  
+  Pobranie szczegółów naliczenia.
+
+- **PUT `/buildings/{building_id}/flats/{flat_id}/rent/{rent_id}/`** *(ADMIN)*  
+  Aktualizacja danych naliczenia.
+
+- **DELETE `/buildings/{building_id}/flats/{flat_id}/rent/{rent_id}/`** *(ADMIN)*  
+  Usunięcie naliczenia.
+
+---
+
+### Zgłoszenia (Report)
+
+#### Zgłoszenia użytkownika
+- **GET `/my/reports/`**  
+  Pobranie listy zgłoszeń zalogowanego użytkownika.
+
+- **POST `/my/reports/`**  
+  Utworzenie nowego zgłoszenia typu **GENERAL**, **FLAT** lub **BUILDING**.  
+  Dostęp do zgłoszeń typu FLAT i BUILDING jest weryfikowany na podstawie przypisań użytkownika.
+
+---
+
+#### Zarządzanie zgłoszeniami (ADMIN)
+- **GET `/reports/`** *(ADMIN)*  
+  Pobranie listy wszystkich zgłoszeń (z możliwością filtrowania).
+
+- **GET `/reports/{id}/`** *(ADMIN)*  
+  Pobranie szczegółów zgłoszenia.
+
+- **PUT `/reports/{id}/`** *(ADMIN)*  
+  Zmiana statusu zgłoszenia.
+
+- **DELETE `/reports/{id}/`** *(ADMIN)*  
+  Usunięcie zgłoszenia.
+
+---
+
+### Ogłoszenia (Announ)
+
+- **GET `/announ/`**  
+  Pobranie listy ogłoszeń (dostęp publiczny).
+
+- **POST `/announ/`** *(ADMIN)*  
+  Dodanie nowego ogłoszenia.
+
+- **GET `/announ/{id}/`**  
+  Pobranie szczegółów ogłoszenia.
+
+- **PUT `/announ/{id}/`** *(ADMIN)*  
+  Aktualizacja ogłoszenia.
+
+- **DELETE `/announ/{id}/`** *(ADMIN)*  
+  Usunięcie ogłoszenia.
+
+---
+
+### Zapytania specjalne i statystyki
+
+- **GET `/rentstats/`** *(ADMIN)*  
+  Zestawienie zaległości i naliczeń według budynków dla wskazanego okresu.
+
+- **GET `/flatsrentstats/`** *(ADMIN)*  
+  Lista mieszkań, których zaległości przekraczają zadany próg.
+
+- **GET `/reportstats/`** *(ADMIN)*  
+  Statystyki zgłoszeń budynkowych według statusów.
 
