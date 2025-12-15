@@ -1,0 +1,1613 @@
+### api_test_final.http (FINAL / CLEAN / LINEAR)
+### DominoApp backend - komplet E2E + auth + negative + edge-cases
+### Założenia:
+### - baza pusta po flush
+### - ROOT ADMIN istnieje ręcznie (shell)
+### - odpalasz po kolei "Send Request" w Rest Client
+
+@BASE_URL = http://127.0.0.1:8000/dominoapp/
+
+@ROOT_ADMIN_EMAIL = admin@root.com
+@ROOT_ADMIN_PASSWORD = admin123
+@INVALID_TOKEN = 0123456789abcdef0123456789abcdef01234567
+
+
+### 0) LOGIN + AUTH (utils.py) – pełny zestaw 401 + login cases
+
+### 0.1 login missing email -> 400
+# @name login_missing_email
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserPassword": "x" }
+
+###
+
+### 0.2 login missing password -> 400
+# @name login_missing_password
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "{{ROOT_ADMIN_EMAIL}}" }
+
+###
+
+### 0.3 login empty password -> 400
+# @name login_empty_password
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "{{ROOT_ADMIN_EMAIL}}", "UserPassword": "" }
+
+###
+
+### 0.4 login nonexistent email -> 401
+# @name login_nonexistent
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "noone@domino.local", "UserPassword": "whatever" }
+
+###
+
+### 0.5 login bad password -> 401
+# @name login_root_bad_password
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "{{ROOT_ADMIN_EMAIL}}", "UserPassword": "BAD_PASSWORD" }
+
+###
+
+### 0.6 login ROOT -> 200 + token
+# @name login_root
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "{{ROOT_ADMIN_EMAIL}}", "UserPassword": "{{ROOT_ADMIN_PASSWORD}}" }
+
+###
+@ROOT_TOKEN = {{login_root.response.body.token}}
+@ROOT_ID = {{login_root.response.body.userId}}
+
+### 0.7 /me OK
+# @name me_root_ok
+GET {{BASE_URL}}me/
+Authorization: Token {{ROOT_TOKEN}}
+
+###
+
+### 0.8 /me no auth header -> 401
+# @name me_no_auth
+GET {{BASE_URL}}me/
+
+###
+
+### 0.9 /me bad auth format -> 401
+# @name me_bad_auth_format
+GET {{BASE_URL}}me/
+Authorization: Token
+
+###
+
+### 0.10 /me wrong auth type -> 401
+# @name me_wrong_auth_type
+GET {{BASE_URL}}me/
+Authorization: Bearer {{ROOT_TOKEN}}
+
+###
+
+### 0.11 /me invalid token -> 401
+# @name me_invalid_token
+GET {{BASE_URL}}me/
+Authorization: Token {{INVALID_TOKEN}}
+
+###
+
+
+### 1) USERS – public list + admin create + validations + admin-only detail
+
+### 1.1 PUBLIC: GET /users (bez tokena) -> 200
+# @name public_users_list
+GET {{BASE_URL}}users/
+
+###
+
+### 1.2 admin-only without token: POST /users -> 401
+# @name users_create_no_auth_401
+POST {{BASE_URL}}users/
+Content-Type: application/json
+
+{
+  "UserName": "X",
+  "UserSurname": "Y",
+  "UserEmail": "x@y.local",
+  "UserPassword": "pass"
+}
+
+###
+
+### 1.3 ROOT tworzy ADMIN1 i ADMIN2
+# @name create_admin1
+POST {{BASE_URL}}users/
+Authorization: Token {{ROOT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Admin",
+  "UserSurname": "One",
+  "UserEmail": "admin1@domino.local",
+  "UserPassword": "AdminPass1!",
+  "UserRole": "ADMIN"
+}
+
+###
+@ADMIN1_ID = {{create_admin1.response.body.UserId}}
+
+# @name create_admin2
+POST {{BASE_URL}}users/
+Authorization: Token {{ROOT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Admin",
+  "UserSurname": "Two",
+  "UserEmail": "admin2@domino.local",
+  "UserPassword": "AdminPass2!",
+  "UserRole": "ADMIN"
+}
+
+###
+@ADMIN2_ID = {{create_admin2.response.body.UserId}}
+
+### 1.4 duplicate email -> 400
+# @name users_duplicate_email_400
+POST {{BASE_URL}}users/
+Authorization: Token {{ROOT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Dup",
+  "UserSurname": "Email",
+  "UserEmail": "admin1@domino.local",
+  "UserPassword": "x",
+  "UserRole": "ADMIN"
+}
+
+###
+
+### 1.5 invalid role -> 400
+# @name users_invalid_role_400
+POST {{BASE_URL}}users/
+Authorization: Token {{ROOT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Bad",
+  "UserSurname": "Role",
+  "UserEmail": "badrole@domino.local",
+  "UserPassword": "x",
+  "UserRole": "SUPERADMIN"
+}
+
+###
+
+### 1.6 create without UserRole -> default RESIDENT (serializer.create)
+# @name create_default_resident
+POST {{BASE_URL}}users/
+Authorization: Token {{ROOT_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName": "Default",
+  "UserSurname": "Resident",
+  "UserEmail": "default_res@domino.local",
+  "UserPassword": "ResPass!"
+}
+
+###
+@DEFAULT_RES_ID = {{create_default_resident.response.body.UserId}}
+
+### 1.7 login admin1 + admin2
+# @name login_admin1
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "admin1@domino.local", "UserPassword": "AdminPass1!" }
+
+###
+@ADMIN1_TOKEN = {{login_admin1.response.body.token}}
+
+# @name login_admin2
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "admin2@domino.local", "UserPassword": "AdminPass2!" }
+
+###
+@ADMIN2_TOKEN = {{login_admin2.response.body.token}}
+
+### 1.8 admin2 changes own password (admin-only PATCH)
+# @name admin2_change_password
+PATCH {{BASE_URL}}users/{{ADMIN2_ID}}/
+Authorization: Token {{login_admin2.response.body.token}}
+Content-Type: application/json
+
+{ "UserPassword": "NoweHasło" }
+
+###
+
+### 1.9 old password fails -> 401
+# @name login_admin2_old_fails
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "admin2@domino.local", "UserPassword": "AdminPass2!" }
+
+###
+
+### 1.10 new password works -> 200 and refresh token (stary też działa)
+# @name login_admin2_new_ok
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail": "admin2@domino.local", "UserPassword": "NoweHasło" }
+
+###
+@ADMIN2_TOKEN = {{login_admin2_new_ok.response.body.token}}
+
+### 1.11 PATCH empty password -> 400
+# @name admin_patch_empty_password_400
+PATCH {{BASE_URL}}users/{{ADMIN1_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "UserPassword": "" }
+
+###
+
+### 1.12 admin-only GET user detail -> 200
+# @name admin_get_user_detail
+GET {{BASE_URL}}users/{{ADMIN1_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 1.13 admin-only GET user detail without auth -> 401
+# @name admin_get_user_detail_no_auth_401
+GET {{BASE_URL}}users/{{ADMIN1_ID}}/
+
+###
+
+### 2) BUILDINGS – public GET + admin CRUD + duplicates + PUT full
+
+
+### 2.1 POST /buildings no auth -> 401
+# @name buildings_create_no_auth_401
+POST {{BASE_URL}}buildings/
+Content-Type: application/json
+
+{
+  "BuildingStreet": "NoAuth",
+  "BuildingNumber": "1",
+  "BuildingCity": "Test",
+  "BuildingPostal": "00-000"
+}
+
+###
+
+### 2.2 create 4 buildings (ADMIN1)
+# @name create_b1
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Kwiatowa",
+  "BuildingNumber": "10A",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-001"
+}
+
+###
+@B1_ID = {{create_b1.response.body.BuildingId}}
+
+# @name create_b2
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Lipowa",
+  "BuildingNumber": "2",
+  "BuildingCity": "Warszawa",
+  "BuildingPostal": "00-002"
+}
+
+###
+@B2_ID = {{create_b2.response.body.BuildingId}}
+
+# @name create_b3
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Morska",
+  "BuildingNumber": "7",
+  "BuildingCity": "Gdańsk",
+  "BuildingPostal": "80-001"
+}
+
+###
+@B3_ID = {{create_b3.response.body.BuildingId}}
+
+# @name create_b4
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Górska",
+  "BuildingNumber": "15",
+  "BuildingCity": "Kraków",
+  "BuildingPostal": "30-001"
+}
+
+###
+@B4_ID = {{create_b4.response.body.BuildingId}}
+
+### 2.3 duplicate building -> 400
+# @name buildings_duplicate_400
+POST {{BASE_URL}}buildings/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Górska",
+  "BuildingNumber": "15",
+  "BuildingCity": "Kraków",
+  "BuildingPostal": "30-001"
+}
+
+###
+
+### 2.4 PUBLIC: list + detail + 404
+# @name public_buildings_list
+GET {{BASE_URL}}buildings/
+
+###
+
+# @name public_building_detail
+GET {{BASE_URL}}buildings/{{B1_ID}}/
+
+###
+
+# @name public_building_detail_404
+GET {{BASE_URL}}buildings/9999999/
+
+###
+
+### 2.5 PUT building full -> 200
+# @name admin_put_building_ok
+PUT {{BASE_URL}}buildings/{{B1_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingStreet": "Kwiatowa",
+  "BuildingNumber": "10A",
+  "BuildingCity": "Warszawa-Updated",
+  "BuildingPostal": "00-001"
+}
+
+###
+
+### 2.6 PUT building missing fields -> 400
+# @name admin_put_building_missing_400
+PUT {{BASE_URL}}buildings/{{B1_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "BuildingCity": "X" }
+
+###
+
+
+### 3) FLATS – nested + integrity + admin PUT full + 400
+
+### 3.1 create flats (ADMIN1)
+# @name create_b1_f1
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"1", "FlatFloor":0, "FlatArea":45.50, "FlatStatus":true }
+
+###
+@B1_F1 = {{create_b1_f1.response.body.FlatId}}
+
+# @name create_b1_f2
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"2", "FlatFloor":1, "FlatArea":51.00, "FlatStatus":true }
+
+###
+@B1_F2 = {{create_b1_f2.response.body.FlatId}}
+
+# @name create_b1_f3
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"3", "FlatFloor":2, "FlatArea":62.00, "FlatStatus":true }
+
+###
+@B1_F3 = {{create_b1_f3.response.body.FlatId}}
+
+# @name create_b2_f1
+POST {{BASE_URL}}buildings/{{B2_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"11", "FlatFloor":1, "FlatArea":40.00, "FlatStatus":true }
+
+###
+@B2_F1 = {{create_b2_f1.response.body.FlatId}}
+
+# @name create_b2_f2
+POST {{BASE_URL}}buildings/{{B2_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"12", "FlatFloor":1, "FlatArea":41.50, "FlatStatus":true }
+
+###
+@B2_F2 = {{create_b2_f2.response.body.FlatId}}
+
+# @name create_b3_f1
+POST {{BASE_URL}}buildings/{{B3_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"21", "FlatFloor":2, "FlatArea":55.00, "FlatStatus":true }
+
+###
+@B3_F1 = {{create_b3_f1.response.body.FlatId}}
+
+# @name create_b4_f1
+POST {{BASE_URL}}buildings/{{B4_ID}}/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"31", "FlatFloor":3, "FlatArea":70.00, "FlatStatus":true }
+
+###
+@B4_F1 = {{create_b4_f1.response.body.FlatId}}
+
+### 3.2 create flat in nonexistent building -> 404
+# @name create_flat_nonexistent_building_404
+POST {{BASE_URL}}buildings/9999999/flats/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber":"X", "FlatFloor":0, "FlatArea":10.00, "FlatStatus":true }
+
+###
+
+### 3.3 PUBLIC: flats list + detail + wrong-building integrity 404
+# @name public_b1_flats_list
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/
+
+###
+
+# @name public_b1_f1_detail
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/
+
+###
+
+# @name flat_wrong_building_404
+GET {{BASE_URL}}buildings/{{B2_ID}}/flats/{{B1_F1}}/
+
+###
+
+### 3.4 PUT flat full (BuildingId in body ignorowany przez serwer)
+# @name admin_put_flat_ok
+PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "BuildingId": {{B2_ID}},
+  "FlatNumber":"1A",
+  "FlatFloor":0,
+  "FlatArea":46.00,
+  "FlatStatus":true
+}
+
+###
+
+### 3.5 PUT flat missing fields -> 400
+# @name admin_put_flat_missing_400
+PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "FlatNumber": "Z" }
+
+###
+
+### 4) RESIDENTS – tworzenie (w tym auto TENANT przy Flats) + loginy
+
+### 4.1 create RES1 (bez flats)
+# @name create_res1
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName":"Jan",
+  "UserSurname":"Kowalski",
+  "UserEmail":"res1@domino.local",
+  "UserPassword":"ResPass1!"
+}
+
+###
+@RES1_ID = {{create_res1.response.body.UserId}}
+
+### 4.2 create RES2 WITH Flats -> auto TENANT
+# @name create_res2_with_flats_auto_tenant
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName":"Anna",
+  "UserSurname":"Nowak",
+  "UserEmail":"res2@domino.local",
+  "UserPassword":"ResPass2!",
+  "Flats":[{{B1_F2}}]
+}
+
+###
+@RES2_ID = {{create_res2_with_flats_auto_tenant.response.body.UserId}}
+
+### 4.3 create RES3 with two flats -> auto TENANT on both
+# @name create_res3_two_flats
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName":"Piotr",
+  "UserSurname":"Zieliński",
+  "UserEmail":"res3@domino.local",
+  "UserPassword":"ResPass3!",
+  "Flats":[{{B1_F3}}, {{B2_F1}}]
+}
+
+###
+@RES3_ID = {{create_res3_two_flats.response.body.UserId}}
+
+### 4.4 create RES4 (bez flats) – będzie używany do deterministycznych tenantsów później
+# @name create_res4
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName":"Kasia",
+  "UserSurname":"Wiśniewska",
+  "UserEmail":"res4@domino.local",
+  "UserPassword":"ResPass4!"
+}
+
+###
+@RES4_ID = {{create_res4.response.body.UserId}}
+
+### 4.5 create RES5, RES6
+# @name create_res5
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName":"Tomek",
+  "UserSurname":"Wójcik",
+  "UserEmail":"res5@domino.local",
+  "UserPassword":"ResPass5!"
+}
+
+###
+@RES5_ID = {{create_res5.response.body.UserId}}
+
+# @name create_res6
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName":"Ola",
+  "UserSurname":"Kaczmarek",
+  "UserEmail":"res6@domino.local",
+  "UserPassword":"ResPass6!"
+}
+
+###
+@RES6_ID = {{create_res6.response.body.UserId}}
+
+### 4.6 NEGATIVE: create user with nonexistent flat -> 400
+# @name create_user_bad_flat_400
+POST {{BASE_URL}}users/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserName":"Bad",
+  "UserSurname":"Flat",
+  "UserEmail":"badflat@domino.local",
+  "UserPassword":"x",
+  "Flats":[999999]
+}
+
+###
+
+### 4.7 login residents
+# @name login_res1
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail":"res1@domino.local", "UserPassword":"ResPass1!" }
+
+###
+@RES1_TOKEN = {{login_res1.response.body.token}}
+
+# @name login_res2
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail":"res2@domino.local", "UserPassword":"ResPass2!" }
+
+###
+@RES2_TOKEN = {{login_res2.response.body.token}}
+
+# @name login_res3
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail":"res3@domino.local", "UserPassword":"ResPass3!" }
+
+###
+@RES3_TOKEN = {{login_res3.response.body.token}}
+
+# @name login_res4
+POST {{BASE_URL}}login/
+Content-Type: application/json
+
+{ "UserEmail":"res4@domino.local", "UserPassword":"ResPass4!" }
+
+###
+@RES4_TOKEN = {{login_res4.response.body.token}}
+
+
+### 5) TENANTS (UserFlat) – public GET + admin POST/PUT/DELETE + 1 active OWNER
+
+### 5.1 PUBLIC: GET tenants list (no auth) -> 200
+# @name public_get_tenants_b1f2
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+
+###
+
+### 5.2 NEGATIVE: POST tenants no auth -> 401
+# @name tenants_post_no_auth_401
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+Content-Type: application/json
+
+{ "UserId": {{RES4_ID}} }
+
+###
+
+### 5.3 NEGATIVE: POST tenants as resident -> 403
+# @name tenants_post_resident_403
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+Authorization: Token {{RES1_TOKEN}}
+Content-Type: application/json
+
+{ "UserId": {{RES4_ID}} }
+
+###
+
+### 5.4 POSITIVE: set OWNER on B1_F2 = RES1 (nowa relacja wiec OK)
+# @name set_owner_b1f2_res1
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "UserId": {{RES1_ID}}, "UserFlatRole": "OWNER" }
+
+###
+@UF_OWNER_RES1_B1F2 = {{set_owner_b1f2_res1.response.body.UserFlatId}}
+
+### 5.5 POSITIVE: add TENANT without role -> default TENANT
+# @name add_tenant_default_role_res4
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "UserId": {{RES4_ID}} }
+
+###
+@UF_TENANT_RES4_B1F2 = {{add_tenant_default_role_res4.response.body.UserFlatId}}
+
+### 5.6 NEGATIVE: try add second active OWNER -> 400
+# @name second_owner_should_400
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "UserId": {{RES4_ID}}, "UserFlatRole": "OWNER" }
+
+###
+
+### 5.7 PUBLIC: GET userflat detail (no auth) -> 200
+# @name public_get_userflat_detail
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/{{UF_OWNER_RES1_B1F2}}/
+
+###
+
+### 5.8 POSITIVE: close owner RES1 by setting DateTo (now no active owner)
+# @name close_owner_res1
+PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/{{UF_OWNER_RES1_B1F2}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{RES1_ID}},
+  "UserFlatRole": "OWNER",
+  "UserFlatDateTo": "2025-12-15"
+}
+
+###
+
+### 5.9 POSITIVE: promote RES4 tenant record to OWNER przez PUT 
+# @name promote_res4_tenant_to_owner
+PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/{{UF_TENANT_RES4_B1F2}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{RES4_ID}},
+  "UserFlatRole": "OWNER",
+  "UserFlatDateTo": null
+}
+
+###
+
+### 5.10 NEGATIVE: wrong flat for existing userflat id -> 404
+# @name userflat_wrong_flat_404
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/tenants/{{UF_TENANT_RES4_B1F2}}/
+
+###
+
+
+### 6) /my/* – /my/flats /my/rents /my/reports
+
+### 6.1 my/flats auth required
+# @name my_flats_no_auth_401
+GET {{BASE_URL}}my/flats/
+
+###
+
+### 6.2 my/flats RES2 – powinien zawierać B1_F2 (auto TENANT przy create)
+# @name my_flats_res2_should_include_b1f2
+GET {{BASE_URL}}my/flats/
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 6.3 my/flats RES3 – powinien mieć B1_F3 i B2_F1
+# @name my_flats_res3_two_flats
+GET {{BASE_URL}}my/flats/
+Authorization: Token {{RES3_TOKEN}}
+
+###
+
+
+### 6.5 my/rents flat_id not int -> 400
+# @name my_rents_flatid_not_int_400
+GET {{BASE_URL}}my/rents/?flat_id=abc
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+
+### 7) RENT – public GET + admin POST/PUT/DELETE + integrity + my/rents filters
+
+### 7.1 PUBLIC GET rent list (no auth)
+# @name public_rent_list_b1f2
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+
+###
+
+### 7.2 POST rent no auth -> 401
+# @name rent_post_no_auth_401
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PENDING"
+}
+
+###
+
+### 7.3 POST rent as resident -> 403
+# @name rent_post_resident_403
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PENDING"
+}
+
+###
+
+### 7.4 admin creates rent PENDING for B1_F2
+# @name create_rent_b1f2_pending
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1500.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PENDING"
+}
+
+###
+@RENT1_ID = {{create_rent_b1f2_pending.response.body.RentId}}
+
+### 7.5 negative amount -> 400
+# @name rent_negative_amount_400
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": -1500.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PENDING"
+}
+
+###
+
+### 7.6 EDGE: duplicate period allowed (nie wymuszamy unikalnego) -> 201
+# @name rent_duplicate_period_allowed
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 10.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PENDING"
+}
+
+###
+
+### 7.7 admin creates PAID for B1_F3
+# @name create_rent_b1f3_paid
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F3}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1200.00,
+  "RentDateDue": "2025-12-20",
+  "RentStatus": "PAID",
+  "RentDate": "2025-12-10"
+}
+
+###
+@RENT2_ID = {{create_rent_b1f3_paid.response.body.RentId}}
+
+### 7.8 PUBLIC rent detail
+# @name public_rent_detail
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/{{RENT1_ID}}/
+
+###
+
+### 7.9 integrity: rent under wrong flat -> 404
+# @name rent_wrong_flat_404
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/rent/{{RENT1_ID}}/
+
+###
+
+### 7.10 admin PUT rent full
+# @name admin_put_rent_ok
+PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/{{RENT1_ID}}/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "FlatId": {{B4_F1}},
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1600.00,
+  "RentDateDue": "2025-12-21",
+  "RentStatus": "PENDING",
+  "RentDate": null
+}
+
+###
+
+### 7.11 admin PUT rent missing fields -> 400
+# @name admin_put_rent_missing_400
+PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/rent/{{RENT1_ID}}/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{ "RentAmount": 1.23 }
+
+###
+
+### 7.12 my/rents RES2 (ma B1_F2) -> 200
+# @name my_rents_res2_all
+GET {{BASE_URL}}my/rents/
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 7.13 my/rents filter OK
+# @name my_rents_res2_filter_ok
+GET {{BASE_URL}}my/rents/?flat_id={{B1_F2}}
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 7.14 my/rents filter forbidden (cudzy flat) -> 403
+# @name my_rents_res2_forbidden_403
+GET {{BASE_URL}}my/rents/?flat_id={{B4_F1}}
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+
+### 8) MY REPORTS – GET filters + POST validations
+
+### 8.1 my/reports no auth -> 401
+# @name my_reports_no_auth_401
+GET {{BASE_URL}}my/reports/
+
+###
+
+### 8.2 POST GENERAL (RES2) – próba narzucenia status/user/flat/building powinna zostać zignorowana
+# @name create_my_report_general_res2
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "GENERAL",
+  "ReportTitle": "Info ogólne",
+  "ReportDescription": "Test zgłoszenia ogólnego",
+  "ReportCategory": "INFO",
+  "ReportStatus": "DONE",
+  "UserId": {{ADMIN1_ID}},
+  "FlatId": {{B1_F2}},
+  "BuildingId": {{B1_ID}}
+}
+
+###
+@R_GENERAL_ID = {{create_my_report_general_res2.response.body.ReportId}}
+
+### 8.3 invalid ReportType -> 400
+# @name my_reports_wrong_type_400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "OUTSIDE",
+  "ReportTitle": "X",
+  "ReportDescription": "X",
+  "ReportCategory": "X"
+}
+
+###
+
+### 8.4 FLAT report missing FlatId -> 400
+# @name my_reports_flat_missing_flatid_400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "ReportTitle": "Brak FlatId",
+  "ReportDescription": "X",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### 8.5 FLAT report FlatId nonexistent -> 400
+# @name my_reports_flat_nonexistent_400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": 999999,
+  "ReportTitle": "Nieistnieje",
+  "ReportDescription": "X",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### 8.6 FLAT report OK on own flat B1_F2
+# @name my_reports_flat_ok
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{B1_F2}},
+  "ReportTitle": "Usterka w mieszkaniu",
+  "ReportDescription": "Cieknący kran",
+  "ReportCategory": "TECH"
+}
+
+###
+@R_FLAT_ID = {{my_reports_flat_ok.response.body.ReportId}}
+
+### 8.7 FLAT report forbidden on flat -> 403
+# @name my_reports_flat_forbidden_403
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "FLAT",
+  "FlatId": {{B4_F1}},
+  "ReportTitle": "X",
+  "ReportDescription": "X",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### 8.8 BUILDING report missing BuildingId -> 400
+# @name my_reports_building_missing_400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "ReportTitle": "X",
+  "ReportDescription": "X",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### 8.9 BUILDING report nonexistent -> 400
+# @name my_reports_building_nonexistent_400
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": 999999,
+  "ReportTitle": "X",
+  "ReportDescription": "X",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### 8.10 BUILDING report OK in B1 (RES2 ma flata tam); FlatId should be removed by server
+# @name my_reports_building_ok
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{B1_ID}},
+  "FlatId": {{B1_F2}},
+  "ReportTitle": "Usterka w budynku",
+  "ReportDescription": "Nie działa domofon",
+  "ReportCategory": "TECH"
+}
+
+###
+@R_BUILDING_ID = {{my_reports_building_ok.response.body.ReportId}}
+
+### 8.11 BUILDING report forbidden (B4) -> 403
+# @name my_reports_building_forbidden_403
+POST {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportType": "BUILDING",
+  "BuildingId": {{B4_ID}},
+  "ReportTitle": "X",
+  "ReportDescription": "X",
+  "ReportCategory": "TECH"
+}
+
+###
+
+### 8.12 GET /my/reports (all)
+# @name my_reports_get_all
+GET {{BASE_URL}}my/reports/
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 8.13 GET my/reports mixed filters -> 400
+# @name my_reports_mixed_filters_400
+GET {{BASE_URL}}my/reports/?flat_id={{B1_F2}}&building_id={{B1_ID}}
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 8.14 GET my/reports flat_id not int -> 400
+# @name my_reports_flatid_not_int_400
+GET {{BASE_URL}}my/reports/?flat_id=abc
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 8.15 GET my/reports flat_id forbidden -> 403
+# @name my_reports_flat_filter_forbidden_403
+GET {{BASE_URL}}my/reports/?flat_id={{B4_F1}}
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 8.16 GET my/reports building_id not int -> 400
+# @name my_reports_buildingid_not_int_400
+GET {{BASE_URL}}my/reports/?building_id=abc
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 8.17 GET my/reports building_id forbidden -> 403
+# @name my_reports_building_filter_forbidden_403
+GET {{BASE_URL}}my/reports/?building_id={{B4_ID}}
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 8.18 GET my/reports building_id ok -> 200 (BUILDING only)
+# @name my_reports_building_filter_ok
+GET {{BASE_URL}}my/reports/?building_id={{B1_ID}}
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 9) ADMIN REPORTS – list + filters + POST global + PUT status only + delete
+
+### 9.1 resident cannot access /reports -> 403
+# @name reports_resident_403
+GET {{BASE_URL}}reports/
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 9.2 admin list all
+# @name admin_reports_all
+GET {{BASE_URL}}reports/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 9.3 admin filter invalid status -> 400
+# @name admin_reports_status_invalid_400
+GET {{BASE_URL}}reports/?status=WRONG
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 9.4 admin filter building_id not int -> 400
+# @name admin_reports_buildingid_not_int_400
+GET {{BASE_URL}}reports/?building_id=abc
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 9.5 admin filter combined
+# @name admin_reports_filter_combined
+GET {{BASE_URL}}reports/?status=WAITING&building_id={{B1_ID}}
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 9.6 admin GET detail
+# @name admin_report_detail
+GET {{BASE_URL}}reports/{{R_FLAT_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 9.7 admin PUT status OK (w inne pola wywalone)
+# @name admin_put_report_status_done
+PUT {{BASE_URL}}reports/{{R_FLAT_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "ReportStatus": "DONE",
+  "ReportTitle": "IGNORED"
+}
+
+###
+
+### 9.8 admin PUT missing status -> 400
+# @name admin_put_report_missing_status_400
+PUT {{BASE_URL}}reports/{{R_FLAT_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ }
+
+###
+
+### 9.9 admin PUT invalid status -> 400
+# @name admin_put_report_invalid_status_400
+PUT {{BASE_URL}}reports/{{R_FLAT_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "ReportStatus": "CLOSED" }
+
+###
+
+### 9.10 admin POST /reports global – ogloszenie BUILDING bez BuildingId xd FIX
+# @name admin_create_building_report_without_building
+POST {{BASE_URL}}reports/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{RES2_ID}},
+  "ReportType": "BUILDING",
+  "ReportTitle": "Niespójny report do statystyk",
+  "ReportDescription": "Brak building",
+  "ReportCategory": "TEST",
+  "ReportStatus": "WAITING"
+}
+
+###
+
+### 9.11 admin DELETE report general
+# @name admin_delete_report_general
+DELETE {{BASE_URL}}reports/{{R_GENERAL_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 9.12 admin GET report 404
+# @name admin_get_report_404
+GET {{BASE_URL}}reports/9999999/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+
+### 10) ANNOUN – public GET + admin POST/PUT/DELETE + author fixed
+
+### 10.1 POST announ no auth -> 401
+# @name announ_post_no_auth_401
+POST {{BASE_URL}}announ/
+Content-Type: application/json
+
+{
+  "AnnounTitle":"X",
+  "AnnounDescription":"Y",
+  "AnnounFrom":"2025-12-18",
+  "AnnounTo":"2025-12-18"
+}
+
+###
+
+### 10.2 POST announ as resident -> 403
+# @name announ_post_resident_403
+POST {{BASE_URL}}announ/
+Authorization: Token {{RES2_TOKEN}}
+Content-Type: application/json
+
+{
+  "AnnounTitle":"X",
+  "AnnounDescription":"Y",
+  "AnnounFrom":"2025-12-18",
+  "AnnounTo":"2025-12-18"
+}
+
+###
+
+### 10.3 admin creates announ 1 (author from token)
+# @name admin_create_announ_1
+POST {{BASE_URL}}announ/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "AnnounTitle":"Przerwa w dostawie wody",
+  "AnnounDescription":"W dniu 2025-12-18 planowana przerwa w dostawie wody.",
+  "AnnounFrom":"2025-12-18",
+  "AnnounTo":"2025-12-18"
+}
+
+###
+@ANNOUN_ID = {{admin_create_announ_1.response.body.AnnounId}}
+
+### 10.4 admin creates announ with reversed dates xd FIX
+# @name admin_create_announ_bad_dates_edge
+POST {{BASE_URL}}announ/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "AnnounTitle":"Daty odwrócone",
+  "AnnounDescription":"Brak walidacji AnnounTo < AnnounFrom.",
+  "AnnounFrom":"2025-12-20",
+  "AnnounTo":"2025-12-18"
+}
+
+###
+
+### 10.5 PUBLIC list + detail
+# @name public_announ_list
+GET {{BASE_URL}}announ/
+
+###
+
+# @name public_announ_detail
+GET {{BASE_URL}}announ/{{ANNOUN_ID}}/
+
+###
+
+### 10.6 admin PUT announ full (UserId in body ignored – author fixed)
+# @name admin_put_announ_ok
+PUT {{BASE_URL}}announ/{{ANNOUN_ID}}/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "UserId": {{RES1_ID}},
+  "AnnounTitle":"Zmieniony tytuł",
+  "AnnounDescription":"Opis zmieniony",
+  "AnnounFrom":"2025-12-18",
+  "AnnounTo":"2025-12-18",
+  "AnnounDate":"2025-12-01T00:00:00Z"
+}
+
+###
+
+### 10.7 admin PUT announ missing fields -> 400
+# @name admin_put_announ_missing_400
+PUT {{BASE_URL}}announ/{{ANNOUN_ID}}/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{ "AnnounTitle":"X" }
+
+###
+
+### 10.8 admin DELETE announ
+# @name admin_delete_announ
+DELETE {{BASE_URL}}announ/{{ANNOUN_ID}}/
+Authorization: Token {{ADMIN2_TOKEN}}
+
+###
+
+### 10.9 public GET deleted announ -> 404
+# @name public_get_deleted_announ_404
+GET {{BASE_URL}}announ/{{ANNOUN_ID}}/
+
+###
+
+### 11) STATYSTYKI – rentstats / flatsrentstats / reportstats + errors
+
+### 11.1 rentstats no auth -> 401
+# @name rentstats_no_auth_401
+GET {{BASE_URL}}rentstats/?month=12&year=2025
+
+###
+
+### 11.2 rentstats resident -> 403
+# @name rentstats_resident_403
+GET {{BASE_URL}}rentstats/?month=12&year=2025
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 11.3 rentstats admin OK
+# @name rentstats_admin_ok
+GET {{BASE_URL}}rentstats/?month=12&year=2025
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 11.4 rentstats bad params -> 400
+# @name rentstats_bad_params_400
+GET {{BASE_URL}}rentstats/?month=abc&year=2025
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 11.5 rentstats month=13 xd FIX
+# @name rentstats_month_13_edge
+GET {{BASE_URL}}rentstats/?month=13&year=2025
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 11.6 flatsrentstats no auth -> 401
+# @name flatsrentstats_no_auth_401
+GET {{BASE_URL}}flatsrentstats/?threshold=1000
+
+###
+
+### 11.7 flatsrentstats resident -> 403
+# @name flatsrentstats_resident_403
+GET {{BASE_URL}}flatsrentstats/?threshold=1000
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 11.8 flatsrentstats admin OK
+# @name flatsrentstats_admin_ok
+GET {{BASE_URL}}flatsrentstats/?threshold=1000
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 11.9 flatsrentstats bad threshold -> 400
+# @name flatsrentstats_bad_threshold_400
+GET {{BASE_URL}}flatsrentstats/?threshold=abc
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 11.10 flatsrentstats negative threshold xd FIX
+# @name flatsrentstats_negative_threshold_edge
+GET {{BASE_URL}}flatsrentstats/?threshold=-1
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 11.11 reportstats no auth -> 401
+# @name reportstats_no_auth_401
+GET {{BASE_URL}}reportstats/
+
+###
+
+### 11.12 reportstats resident -> 403
+# @name reportstats_resident_403
+GET {{BASE_URL}}reportstats/
+Authorization: Token {{RES2_TOKEN}}
+
+###
+
+### 11.13 reportstats admin OK (powinno zawierać "Nieprzypisany budynek" i "Warszawa-updated")
+# @name reportstats_admin_ok
+GET {{BASE_URL}}reportstats/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 12) ADMIN – dodatkowe CRUD: PATCH Flats reset + DELETE user + DELETE flat/building/rent/userflat
+
+### 12.1 PATCH RES6 surname
+# @name admin_patch_res6
+PATCH {{BASE_URL}}users/{{RES6_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "UserSurname": "Kaczmarek-Updated" }
+
+###
+
+### 12.2 PATCH RES1 set Flats -> resets relations and creates TENANT(s)
+# @name admin_patch_res1_set_flats
+PATCH {{BASE_URL}}users/{{RES1_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+Content-Type: application/json
+
+{ "Flats": [{{B2_F2}}] }
+
+###
+
+### 12.3 RES1 /my/flats tera powinno B2_F2
+# @name my_flats_res1_after_patch
+GET {{BASE_URL}}my/flats/
+Authorization: Token {{RES1_TOKEN}}
+
+###
+
+### 12.4 DELETE RES5
+# @name admin_delete_res5
+DELETE {{BASE_URL}}users/{{RES5_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 12.5 DELETE rent2 (admin)
+# @name admin_delete_rent2
+DELETE {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F3}}/rent/{{RENT2_ID}}/
+Authorization: Token {{ADMIN2_TOKEN}}
+
+###
+
+### 12.6 GET deleted rent2 -> 404
+# @name public_get_deleted_rent2_404
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F3}}/rent/{{RENT2_ID}}/
+
+###
+
+### 12.7 DELETE userflat RES4 record (admin) – używamy znanego ID UF_TENANT_RES4_B1F2
+# @name admin_delete_userflat_res4
+DELETE {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/{{UF_TENANT_RES4_B1F2}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 12.8 GET deleted userflat -> 404
+# @name public_get_deleted_userflat_404
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/{{UF_TENANT_RES4_B1F2}}/
+
+###
+
+### 12.9 DELETE flat B1_F1 (admin)
+# @name admin_delete_flat_b1f1
+DELETE {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 12.10 GET deleted flat -> 404
+# @name public_get_deleted_flat_404
+GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/
+
+###
+
+### 12.11 DELETE building B3 (kaskadka tzw) -> 204
+# @name admin_delete_building_b3
+DELETE {{BASE_URL}}buildings/{{B3_ID}}/
+Authorization: Token {{ADMIN1_TOKEN}}
+
+###
+
+### 12.12 GET flats in deleted building -> 404
+# @name public_get_flats_deleted_building_404
+GET {{BASE_URL}}buildings/{{B3_ID}}/flats/
+
+###
