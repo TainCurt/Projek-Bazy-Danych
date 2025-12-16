@@ -757,7 +757,7 @@ GET {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/{{UF_OWNER_RES1_B1F2
 
 ###
 
-### 5.8 POSITIVE: close owner RES1 by setting DateTo (now no active owner)
+### 5.8 POSITIVE: close owner RES1 by setting DateTo (now no active owner) FIX DateFrom może być większe niz DateTo
 # @name close_owner_res1
 PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F2}}/tenants/{{UF_OWNER_RES1_B1F2}}/
 Authorization: Token {{ADMIN1_TOKEN}}
@@ -1325,7 +1325,7 @@ Authorization: Token {{ADMIN1_TOKEN}}
 
 ###
 
-### 9.7 admin PUT status OK (w inne pola wywalone)
+### 9.7 admin PUT status OK (w inne pola ignorowane)
 # @name admin_put_report_status_done
 PUT {{BASE_URL}}reports/{{R_FLAT_ID}}/
 Authorization: Token {{ADMIN1_TOKEN}}
@@ -1358,7 +1358,7 @@ Content-Type: application/json
 
 ###
 
-### 9.10 admin POST /reports global – ogloszenie BUILDING bez BuildingId xd FIX
+### 9.10 admin POST /reports global – ogloszenie BUILDING bez BuildingId  FIX
 # @name admin_create_building_report_without_building
 POST {{BASE_URL}}reports/
 Authorization: Token {{ADMIN1_TOKEN}}
@@ -1437,7 +1437,7 @@ Content-Type: application/json
 ###
 @ANNOUN_ID = {{admin_create_announ_1.response.body.AnnounId}}
 
-### 10.4 admin creates announ with reversed dates xd FIX
+### 10.4 admin creates announ with reversed dates FIX
 # @name admin_create_announ_bad_dates_edge
 POST {{BASE_URL}}announ/
 Authorization: Token {{ADMIN2_TOKEN}}
@@ -1532,7 +1532,7 @@ Authorization: Token {{ADMIN1_TOKEN}}
 
 ###
 
-### 11.5 rentstats month=13 xd FIX
+### 11.5 rentstats month=13 FIX
 # @name rentstats_month_13_edge
 GET {{BASE_URL}}rentstats/?month=13&year=2025
 Authorization: Token {{ADMIN1_TOKEN}}
@@ -1566,7 +1566,7 @@ Authorization: Token {{ADMIN1_TOKEN}}
 
 ###
 
-### 11.10 flatsrentstats negative threshold xd FIX
+### 11.10 flatsrentstats negative threshold FIX
 # @name flatsrentstats_negative_threshold_edge
 GET {{BASE_URL}}flatsrentstats/?threshold=-1
 Authorization: Token {{ADMIN1_TOKEN}}
