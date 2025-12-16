@@ -535,7 +535,7 @@ PUT {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F1}}/
 Authorization: Token {{ADMIN1_TOKEN}}
 Content-Type: application/json
 
-{ "FlatNumber": "Z" }
+{ "FlatNumber": "76" }
 
 ###
 
@@ -822,6 +822,73 @@ Authorization: Token {{RES2_TOKEN}}
 
 ###
 
+# @name create_rent_b2f1_rent_auto_pend
+POST {{BASE_URL}}buildings/{{B2_ID}}/flats/{{B2_F1}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1400.00,
+  "RentDateDue": "2025-12-30"
+}
+
+###
+
+# @name create_rent_b1f3_rent_auto_pend
+POST {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F3}}/rent/
+Authorization: Token {{ADMIN2_TOKEN}}
+Content-Type: application/json
+
+{
+  "RentMonth": 12,
+  "RentYear": 2025,
+  "RentAmount": 1500.00,
+  "RentDateDue": "2025-12-20"
+}
+
+###
+
+# @name my_rents_res3_no_filter
+GET {{BASE_URL}}my/rents/
+Authorization: Token {{RES3_TOKEN}}
+
+###
+
+# @name my_rents_res3_b1f3_filter
+GET {{BASE_URL}}my/rents/?flat_id={{B1_F3}}
+Authorization: Token {{RES3_TOKEN}}
+
+###
+
+# @name my_rents_res3_b2f1_filter
+GET {{BASE_URL}}my/rents/?flat_id={{B2_F1}}
+Authorization: Token {{RES3_TOKEN}}
+
+###
+
+# @name admin2_deletes_first_rent
+DELETE {{BASE_URL}}buildings/{{B1_ID}}/flats/{{B1_F3}}/rent/2/
+Authorization: Token {{ADMIN2_TOKEN}}
+
+###
+
+# @name admin2_deletes_second_rent
+DELETE {{BASE_URL}}buildings/{{B2_ID}}/flats/{{B2_F1}}/rent/1/
+Authorization: Token {{ADMIN2_TOKEN}}
+
+###
+
+# @name my_rents_res3_b1f3_filter_empty
+GET {{BASE_URL}}my/rents/?flat_id={{B1_F3}}
+Authorization: Token {{RES3_TOKEN}}
+
+###
+
+# @name my_rents_res3_b2f1_filter_empty
+GET {{BASE_URL}}my/rents/?flat_id={{B2_F1}}
+Authorization: Token {{RES3_TOKEN}}
 
 ### 7) RENT – public GET + admin POST/PUT/DELETE + integrity + my/rents filters
 
