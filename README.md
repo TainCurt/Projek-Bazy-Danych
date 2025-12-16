@@ -311,3 +311,181 @@ Backend aplikacji Domino udostępnia zestaw endpointów umożliwiających realiz
 - **GET `/reportstats/`** *(ADMIN)*  
   Statystyki zgłoszeń budynkowych według statusów.
 
+## Autoryzacja i kontrola dostępu
+
+Aplikacja Domino wykorzystuje własny mechanizm autoryzacji oparty o tokeny, zaimplementowany przy użyciu Django REST Framework. Autoryzacja realizowana jest na poziomie widoków API i kontroluje dostęp użytkowników do zasobów systemu.
+
+---
+
+### Mechanizm logowania
+
+Uwierzytelnianie użytkownika odbywa się poprzez endpoint logowania:
+
+- **POST `/login/`**
+
+Użytkownik przekazuje w treści żądania swój adres e-mail oraz hasło.  
+Po poprawnym uwierzytelnieniu generowany jest unikalny token, który identyfikuje sesję użytkownika.
+
+Każde poprawne logowanie skutkuje utworzeniem nowego tokenu, co umożliwia jednoczesne istnienie wielu aktywnych sesji dla jednego użytkownika.
+
+---
+
+### Token autoryzacyjny
+
+Token przekazywany jest w nagłówku HTTP każdego żądania wymagającego uwierzytelnienia:
+
+Authorization: Token <TOKEN>
+
+Tokeny przechowywane są w encji **AuthToken** i zawierają:
+- unikalny klucz tokenu,
+- użytkownika, do którego są przypisane,
+- datę utworzenia.
+
+Brak tokenu, niepoprawny format nagłówka lub nieistniejący token skutkują odrzuceniem żądania.
+
+---
+
+### Role użytkowników
+
+System rozróżnia dwie role użytkowników:
+
+- **ADMIN**  
+  Użytkownik administracyjny posiada pełny dostęp do funkcjonalności systemu, w tym:
+  - zarządzanie użytkownikami,
+  - zarządzanie budynkami i mieszkaniami,
+  - przypisywanie użytkowników do mieszkań,
+  - zarządzanie opłatami, zgłoszeniami i ogłoszeniami,
+  - dostęp do statystyk i raportów.
+
+- **USER (RESIDENT / OWNER)**  
+  Użytkownik standardowy posiada dostęp wyłącznie do danych, które go dotyczą, w szczególności:
+  - przegląd własnych mieszkań,
+  - przegląd własnych opłat,
+  - zgłaszanie problemów i usterek,
+  - przegląd ogłoszeń.
+
+---
+
+### Kontrola dostępu
+
+Kontrola dostępu realizowana jest w warstwie backendu i opiera się na:
+- weryfikacji obecności i poprawności tokenu,
+- sprawdzeniu roli użytkownika,
+- sprawdzeniu powiązań użytkownika z danym zasobem (np. mieszkanie, budynek).
+
+W przypadku naruszenia zasad autoryzacji API zwraca odpowiednie kody HTTP:
+- **401 Unauthorized** – brak lub niepoprawny token,
+- **403 Forbidden** – brak wymaganych uprawnień,
+- **404 Not Found** – próba dostępu do nieistniejącego zasobu.
+
+---
+
+### Endpointy wymagające autoryzacji
+
+Autoryzacji wymagają m.in.:
+- wszystkie operacje modyfikujące dane (POST, PUT, PATCH, DELETE),
+- endpointy typu `my/*`,
+- endpointy administracyjne,
+- endpointy statystyczne.
+
+Endpointy publiczne (niewymagające autoryzacji) obejmują m.in.:
+- pobieranie listy budynków,
+- pobieranie listy mieszkań,
+- pobieranie ogłoszeń.
+
+---
+
+Sekcja ta opisuje sposób zabezpieczenia API oraz reguły dostępu do poszczególnych funkcjonalności systemu.
+
+## Uruchomienie projektu
+
+Poniżej przedstawiono instrukcję uruchomienia backendu aplikacji Domino w środowisku lokalnym.
+
+---
+
+### Wymagania wstępne
+
+Do uruchomienia projektu wymagane są:
+- Python 3.10 lub nowszy,
+- PostgreSQL,
+- menedżer pakietów `pip`,
+- (opcjonalnie) środowisko wirtualne `venv`.
+
+Wymagane pakiety:
+```terminal
+pip install django
+```
+
+```terminal
+pip install djangorestframework
+```
+
+```terminal
+pip install psycopg2-binary
+```
+
+  
+
+---
+
+### Konfiguracja bazy danych
+Aplikacja wykorzystuje relacyjną bazę danych PostgreSQL.
+
+W pliku `settings.py` należy skonfigurować połączenie z bazą danych:
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'Domino',
+        'USER': 'postgres',
+        'PASSWORD': '<hasło>',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
+```
+Należy upewnić się, że baza danych istnieje oraz użytkownik posiada odpowiednie uprawnienia.
+
+---
+### Migracje bazy danych
+Po poprawnej konfiguracji bazy danych należy wykonać migracje:
+```terminal
+python manage.py makemigrations
+python manage.py migrate
+```
+---
+### Utworzenie konta administratora
+W celu uzyskania dostępu administracyjnego do systemu należy utworzyć konto administratora poprzez:
+```terminal
+python manage.py shell
+```
+Wklejając w nim formułkę dostępną w `api_test/MAIN_ADMIN_FORCED.py`:
+```python
+from DominoApp.models import User, UserRole
+from django.contrib.auth.hashers import make_password
+import datetime
+
+admin = User.objects.create(
+    UserName="Admin",
+    UserSurname="Root",
+    UserEmail="admin@root.com",
+    UserPassword=make_password("admin123"),
+    UserRole=UserRole.ADMIN,
+    UserDate=datetime.date.today(),
+    UserStatus=True
+)
+admin.UserId
+```
+---
+### Uruchomienie serwera
+Serwer uruchamiany jest poleceniem:
+```terminal
+python manage.py runserver
+```
+Backend aplikacji będzie dostępny pod adresem:
+```terminal
+http://127.0.0.1:8000/
+```
+---
+### Testowanie API
+Do testowania API zalecane jest użycie narzędzia REST Client oraz pliku `api_test_final_final.http`. Plik zawiera kompletny scenariusz testowy umożliwiający przetestowanie wszystkich funkcjonalności backendu krok po kroku.
