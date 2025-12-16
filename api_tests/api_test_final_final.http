@@ -822,6 +822,8 @@ Authorization: Token {{RES2_TOKEN}}
 
 ###
 
+
+### Tworzymy rents, sprawdzamy wszystkie i filtrujemy dla konkretnych mieszkan i usuwamy
 # @name create_rent_b2f1_rent_auto_pend
 POST {{BASE_URL}}buildings/{{B2_ID}}/flats/{{B2_F1}}/rent/
 Authorization: Token {{ADMIN2_TOKEN}}
