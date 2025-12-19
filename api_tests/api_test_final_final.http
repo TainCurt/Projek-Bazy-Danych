@@ -3,10 +3,9 @@
 ### Założenia:
 ### - baza pusta po flush
 ### - ROOT ADMIN istnieje ręcznie (shell)
-### - odpalasz po kolei "Send Request" w Rest Client
+### - po kolei "Send Request" w Rest Client
 
 @BASE_URL = http://127.0.0.1:8000/dominoapp/
-
 @ROOT_ADMIN_EMAIL = admin@root.com
 @ROOT_ADMIN_PASSWORD = admin123
 @INVALID_TOKEN = 0123456789abcdef0123456789abcdef01234567
