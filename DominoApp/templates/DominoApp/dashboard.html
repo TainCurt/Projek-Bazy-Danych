@@ -1,0 +1,93 @@
+{% extends "DominoApp/base.html" %}
+
+{% block title %}Pulpit nawigacyjny{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold">Witaj w systemie Domino</h2>
+            <p class="text-muted">Wybierz jedną z dostępnych opcji poniżej.</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 rounded-3">
+                <div class="card-body text-center p-4">
+                    <div class="fs-1 mb-3">📢</div>
+                    <h5 class="card-title">Ogłoszenia</h5>
+                    <p class="card-text text-muted">Przeglądaj aktualne komunikaty dla mieszkańców.</p>
+                    <a href="#" class="btn btn-outline-primary w-100">Otwórz</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 admin-only d-none">
+            <div class="card h-100 shadow-sm border-primary border-opacity-25 rounded-3">
+                <div class="card-body text-center p-4">
+                    <div class="fs-1 mb-3">🏢</div>
+                    <h5 class="card-title">Zarządzanie Budynkami</h5>
+                    <p class="card-text text-muted">Dodawaj budynki, edytuj dane i zarządzaj lokalami.</p>
+                    <a href="/buildings/" class="btn btn-primary w-100">Zarządzaj</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 admin-only d-none">
+            <div class="card h-100 shadow-sm border-danger border-opacity-25 rounded-3">
+                <div class="card-body text-center p-4">
+                    <div class="fs-1 mb-3">💰</div>
+                    <h5 class="card-title">Statystyki Zadłużeń</h5>
+                    <p class="card-text text-muted">Raporty lokali z wysokim zadłużeniem (powyżej 2000 zł).</p>
+                    <a href="#" class="btn btn-danger w-100">Sprawdź dłużników</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 user-only d-none">
+            <div class="card h-100 shadow-sm border-success border-opacity-25 rounded-3">
+                <div class="card-body text-center p-4">
+                    <div class="fs-1 mb-3">🔑</div>
+                    <h5 class="card-title">Moje Mieszkania</h5>
+                    <p class="card-text text-muted">Sprawdź status swoich lokali i czynsze.</p>
+                    <a href="#" class="btn btn-success w-100">Moje lokale</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col text-center">
+            <button onclick="logout()" class="btn btn-link text-decoration-none text-muted">
+                Wyloguj się z systemu
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const role = localStorage.getItem("userRole"); // Odczytujemy rolę zapisaną przy logowaniu
+    const token = localStorage.getItem("authToken");
+
+    // Jeśli brak tokena, wyrzuć do logowania
+    if (!token) {
+        window.location.href = "{% url 'custom-login' %}";
+        return;
+    }
+
+    // Pokazywanie sekcji na podstawie roli
+    if (role === 'ADMIN') {
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
+    } else if (role === 'USER') {
+        document.querySelectorAll('.user-only').forEach(el => el.classList.remove('d-none'));
+    }
+});
+
+function logout() {
+    localStorage.clear();
+    window.location.href = "{% url 'custom-login' %}";
+}
+</script>
+{% endblock %}
