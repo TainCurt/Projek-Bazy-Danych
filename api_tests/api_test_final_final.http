@@ -3,7 +3,7 @@
 ### Założenia:
 ### - baza pusta po flush
 ### - ROOT ADMIN istnieje ręcznie (shell)
-### - odpalasz po kolei "Send Request" w Rest Client
+### - po kolei "Send Request" w Rest Client
 
 @BASE_URL = http://127.0.0.1:8000/
 

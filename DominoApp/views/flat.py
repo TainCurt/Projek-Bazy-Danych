@@ -1,6 +1,5 @@
 from math import fabs
 import stat
-from tarfile import data_filter
 from urllib import response
 from django.shortcuts import render
 from django.urls import is_valid_path
