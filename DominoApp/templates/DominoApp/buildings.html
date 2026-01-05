@@ -1,0 +1,133 @@
+{% extends "DominoApp/base.html" %}
+
+{% block title %}Zarządzanie Budynkami{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-building"></i> Lista Budynków</h2>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBuildingModal">
+        + Dodaj nowy budynek
+    </button>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Miasto</th>
+                    <th>Ulica</th>
+                    <th>Numer</th>
+                    <th class="text-end">Akcje</th>
+                </tr>
+            </thead>
+            <tbody id="buildings-list">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addBuildingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nowy Budynek</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-building-form">
+                    <div class="mb-3">
+                        <label class="form-label">Miasto</label>
+                        <input type="text" id="city" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ulica</label>
+                        <input type="text" id="street" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Numer</label>
+                        <input type="text" id="number" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Zapisz</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem("authToken"); // Pobieramy token
+
+// Funkcja pobierająca listę budynków
+async function fetchBuildings() {
+    const response = await fetch('/api/buildings/', {
+        headers: { 'Authorization': 'Token ' + token }
+    });
+    
+    if (response.ok) {
+        const buildings = await response.json();
+        const list = document.getElementById('buildings-list');
+        list.innerHTML = '';
+        
+buildings.forEach(b => {
+    list.innerHTML += `
+        <tr>
+            <td>${b.BuildingId}</td>
+            <td>${b.BuildingCity}</td>
+            <td>${b.BuildingStreet}</td>
+            <td>${b.BuildingNumber}</td>
+            <td class="text-end">
+                <a href="/buildings/${b.BuildingId}/" class="btn btn-sm btn-info text-white">
+                    <i class="bi bi-eye"></i> Szczegóły
+                </a>
+                <button onclick="deleteBuilding(${b.BuildingId})" class="btn btn-sm btn-outline-danger">Usuń</button>
+            </td>
+        </tr>`;
+});
+    }
+}
+
+// Funkcja dodająca budynek
+document.getElementById('add-building-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = {
+        BuildingCity: document.getElementById('city').value,
+        BuildingStreet: document.getElementById('street').value,
+        BuildingNumber: document.getElementById('number').value
+    };
+
+    const response = await fetch('/api/buildings/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Token ' + token,
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+        location.reload(); // Odśwież stronę po sukcesie
+    } else {
+        alert("Błąd podczas dodawania budynku.");
+    }
+});
+
+// Funkcja usuwająca budynek
+async function deleteBuilding(id) {
+    if (confirm("Czy na pewno chcesz usunąć ten budynek?")) {
+        const response = await fetch(`/api/buildings/${id}/`, {
+            method: 'DELETE',
+            headers: { 
+                'Authorization': 'Token ' + token,
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        if (response.ok) fetchBuildings();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', fetchBuildings);
+</script>
+{% endblock %}

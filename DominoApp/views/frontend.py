@@ -23,3 +23,15 @@ def custom_login_view(request):
 
 def dashboard_view(request):
     return render(request, "DominoApp/dashboard.html")
+
+def buildings_list_view(request):
+    return render(request, "DominoApp/buildings.html")
+
+def building_details_view(request, building_id):
+    return render(request, "DominoApp/building_details.html", {'building_id': building_id})
+
+def flat_details_view(request, building_id, flat_id):
+    return render(request, "DominoApp/flat_details.html", {
+        'building_id': building_id,
+        'flat_id': flat_id
+    })

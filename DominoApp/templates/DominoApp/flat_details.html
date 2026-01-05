@@ -1,0 +1,91 @@
+{% extends "DominoApp/base.html" %}
+
+{% block title %}Szczegóły Mieszkania{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="/buildings/{{ building_id }}/" class="btn btn-outline-secondary btn-sm mb-3">← Powrót do budynku</a>
+    <h2 id="flat-title">Ładowanie danych mieszkania...</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-dark text-white">Specyfikacja lokalu</div>
+            <div class="card-body" id="flat-info">
+                <p><strong>Numer:</strong> <span id="info-number">-</span></p>
+                <p><strong>Piętro:</strong> <span id="info-floor">-</span></p>
+                <p><strong>Powierzchnia:</strong> <span id="info-area">-</span> m²</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                <h5 class="mb-0">Historia Opłat</h5>
+                <button class="btn btn-sm btn-outline-success">+ Dodaj opłatę</button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Kwota</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rents-list">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const bId = "{{ building_id }}";
+const fId = "{{ flat_id }}";
+const token = localStorage.getItem("authToken");
+
+async function loadFlatDetails() {
+    try {
+        // 1. Pobierz dane mieszkania
+        const flatRes = await fetch(`/api/buildings/${bId}/flats/${fId}/`, {
+            headers: { 'Authorization': 'Token ' + token }
+        });
+        const flat = await flatRes.json();
+        
+        document.getElementById('flat-title').innerText = `Mieszkanie nr ${flat.FlatNumber}`;
+        document.getElementById('info-number').innerText = flat.FlatNumber;
+        document.getElementById('info-floor').innerText = flat.FlatFloor;
+        document.getElementById('info-area').innerText = flat.FlatArea;
+
+        // 2. Pobierz historię czynszów
+        const rentRes = await fetch(`/api/buildings/${bId}/flats/${fId}/rents/`, {
+            headers: { 'Authorization': 'Token ' + token }
+        });
+        const rents = await rentRes.json();
+        const rentsTable = document.getElementById('rents-list');
+        
+        if (rents.length === 0) {
+            rentsTable.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Brak zarejestrowanych opłat</td></tr>';
+        } else {
+            rents.forEach(r => {
+                const statusClass = r.RentStatus === 'PAID' ? 'bg-success' : 'bg-warning';
+                rentsTable.innerHTML += `
+                    <tr>
+                        <td>${r.RentDate || 'Brak daty'}</td>
+                        <td>${r.RentAmount} zł</td>
+                        <td><span class="badge ${statusClass}">${r.RentStatus}</span></td>
+                    </tr>`;
+            });
+        }
+    } catch (err) {
+        console.error("Błąd ładowania szczegółów mieszkania:", err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadFlatDetails);
+</script>
+{% endblock %}

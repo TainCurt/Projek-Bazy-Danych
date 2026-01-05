@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", function() {
     // Pokazywanie sekcji na podstawie roli
     if (role === 'ADMIN') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
-    } else if (role === 'USER') {
+    } else if (role === 'RESIDENT') {
         document.querySelectorAll('.user-only').forEach(el => el.classList.remove('d-none'));
     }
 });

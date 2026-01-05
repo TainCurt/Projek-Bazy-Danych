@@ -1,0 +1,95 @@
+{% extends "DominoApp/base.html" %}
+
+{% block title %}Szczegóły Budynku{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'buildings-list' %}" class="btn btn-outline-secondary btn-sm mb-3">← Powrót do listy</a>
+    <h2 id="building-title">Ładowanie danych budynku...</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">Informacje o obiekcie</div>
+            <div class="card-body">
+                <p><strong>Miasto:</strong> <span id="info-city">-</span></p>
+                <p><strong>Ulica:</strong> <span id="info-street">-</span></p>
+                <p><strong>Numer:</strong> <span id="info-number">-</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Lista Mieszkań</span>
+                <button class="btn btn-sm btn-success">+ Dodaj mieszkanie</button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nr mieszkania</th>
+                            <th>Piętro</th>
+                            <th>Powierzchnia</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flats-list">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const buildingId = "{{ building_id }}";
+const token = localStorage.getItem("authToken");
+
+async function loadData() {
+    try {
+        // 1. Pobierz dane budynku
+        const bRes = await fetch(`/api/buildings/${buildingId}/`, {
+            headers: { 'Authorization': 'Token ' + token }
+        });
+        const building = await bRes.json();
+        
+        document.getElementById('building-title').innerText = `Budynek: ${building.BuildingStreet} ${building.BuildingNumber}`;
+        document.getElementById('info-city').innerText = building.BuildingCity;
+        document.getElementById('info-street').innerText = building.BuildingStreet;
+        document.getElementById('info-number').innerText = building.BuildingNumber;
+
+        // 2. Pobierz listę mieszkań
+        const fRes = await fetch(`/api/buildings/${buildingId}/flats/`, {
+            headers: { 'Authorization': 'Token ' + token }
+        });
+        const flats = await fRes.json();
+        const flatsTable = document.getElementById('flats-list');
+        
+        if (flats.length === 0) {
+            flatsTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Brak mieszkań w tym budynku</td></tr>';
+        } else {
+flats.forEach(f => {
+    flatsTable.innerHTML += `
+        <tr>
+            <td>${f.FlatNumber}</td>
+            <td>${f.FlatFloor}</td>
+            <td>${f.FlatArea} m²</td>
+            <td>
+                <a href="/buildings/${buildingId}/flats/${f.FlatId}/" class="btn btn-sm btn-primary">
+                    Szczegóły
+                </a>
+            </td>
+        </tr>`;
+});
+        }
+    } catch (err) {
+        console.error("Błąd ładowania:", err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+{% endblock %}
