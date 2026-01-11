@@ -1,0 +1,122 @@
+{% extends "DominoApp/base.html" %}
+{% block title %}Moje mieszkania{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Moje mieszkania</h2>
+        <div class="text-muted">Wybierz lokal, aby zobaczyć szczegóły i opłaty</div>
+    </div>
+
+    <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+</div>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+
+<div class="row g-3" id="flatsGrid">
+    <div class="text-muted">Ładowanie...</div>
+</div>
+
+<script>
+const token = localStorage.getItem("authToken");
+const role = localStorage.getItem("userRole");
+
+function showError(msg) {
+    const box = document.getElementById("errorBox");
+    box.classList.remove("d-none");
+    box.innerText = msg;
+}
+
+function setActiveFlat(flat) {
+    localStorage.setItem("activeFlatId", flat.FlatId);
+    localStorage.setItem("activeBuildingId", flat.BuildingId); // bo serializer zwraca FK jako id
+    // Prosty feedback:
+    document.querySelectorAll("[data-flat-card]").forEach(el => el.classList.remove("border-success"));
+    const card = document.getElementById("flat-card-" + flat.FlatId);
+    if (card) card.classList.add("border-success");
+}
+
+async function loadMyFlats() {
+    if (!token) {
+        window.location.href = "/login/";
+        return;
+    }
+
+    // jeśli ktoś wejdzie jako admin -> też pokażemy, ale docelowo to ekran residenta
+    try {
+        const res = await fetch("/api/my/flats/", {
+            headers: { "Authorization": "Token " + token }
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || "Nie udało się pobrać listy mieszkań.");
+        }
+
+        const grid = document.getElementById("flatsGrid");
+        grid.innerHTML = "";
+
+        if (!data.length) {
+            grid.innerHTML = `<div class="text-muted">Nie masz przypisanych mieszkań.</div>`;
+            return;
+        }
+
+        const activeFlatId = localStorage.getItem("activeFlatId");
+
+        data.forEach(f => {
+            const isActive = activeFlatId && String(f.FlatId) === String(activeFlatId);
+
+            grid.innerHTML += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm ${isActive ? "border border-success" : ""}"
+                         id="flat-card-${f.FlatId}"
+                         data-flat-card="1">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-semibold fs-5">Mieszkanie ${f.FlatNumber}</div>
+                                    <div class="text-muted small">Piętro: ${f.FlatFloor} • ${f.FlatArea} m²</div>
+                                </div>
+                                <span class="badge ${f.FlatStatus ? "bg-success" : "bg-secondary"}">
+                                    ${f.FlatStatus ? "Aktywne" : "Nieaktywne"}
+                                </span>
+                            </div>
+
+                            <div class="mt-3 d-flex gap-2">
+                                <a class="btn btn-primary btn-sm w-100"
+                                    href="/buildings/${f.BuildingId}/flats/${f.FlatId}/">
+                                    Szczegóły
+                                </a>
+
+                                <a class="btn btn-outline-success btn-sm w-100"
+                                    href="/my/rents/"
+                                    onclick="localStorage.setItem('activeFlatId','${f.FlatId}');
+                                                localStorage.setItem('activeBuildingId','${f.BuildingId}');">
+                                    Moje opłaty
+                                </a>
+                            </div>
+
+                            <div class="mt-2">
+                                <button class="btn btn-outline-success btn-sm w-100"
+                                        type="button"
+                                        onclick='setActiveFlat(${JSON.stringify({
+                                            FlatId: f.FlatId,
+                                            BuildingId: f.BuildingId
+                                        })})'>
+                                    Ustaw jako aktywne
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+    } catch (e) {
+        showError(e.message);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadMyFlats);
+</script>
+{% endblock %}

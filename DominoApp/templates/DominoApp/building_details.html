@@ -24,7 +24,9 @@
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <span>Lista Mieszkań</span>
-                <button class="btn btn-sm btn-success">+ Dodaj mieszkanie</button>
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addFlatModal">
+                    + Dodaj mieszkanie
+                </button>
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
@@ -33,7 +35,8 @@
                             <th>Nr mieszkania</th>
                             <th>Piętro</th>
                             <th>Powierzchnia</th>
-                            <th>Status</th>
+                            <th>Akcje</th>
+                            <th class="text-end">Akcje</th>
                         </tr>
                     </thead>
                     <tbody id="flats-list">
@@ -43,6 +46,35 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="addFlatModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Dodaj mieszkanie</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-flat-form">
+          <div class="mb-3">
+            <label class="form-label">Numer mieszkania</label>
+            <input type="text" id="flatNumber" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Piętro</label>
+            <input type="number" id="flatFloor" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Powierzchnia (m²)</label>
+            <input type="number" step="0.01" id="flatArea" class="form-control" required>
+          </div>
+          <button type="submit" class="btn btn-success w-100">Zapisz</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script>
 const buildingId = "{{ building_id }}";
@@ -82,6 +114,11 @@ flats.forEach(f => {
                     Szczegóły
                 </a>
             </td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteFlat(${f.FlatId})">
+                    Usuń
+                </button>
+            </td>
         </tr>`;
 });
         }
@@ -91,5 +128,60 @@ flats.forEach(f => {
 }
 
 document.addEventListener('DOMContentLoaded', loadData);
+
+document.getElementById('add-flat-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        FlatNumber: document.getElementById('flatNumber').value,
+        FlatFloor: parseInt(document.getElementById('flatFloor').value),
+        FlatArea: parseFloat(document.getElementById('flatArea').value),
+        FlatStatus: true
+    };
+
+    const res = await fetch(`/api/buildings/${buildingId}/flats/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        // zamknij modal
+        const modalEl = document.getElementById("addFlatModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        // odśwież listę mieszkań
+        location.reload();
+    } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Błąd podczas dodawania mieszkania.");
+    }
+});
+
+async function deleteFlat(flatId) {
+    if (!confirm("Czy na pewno chcesz usunąć to mieszkanie?")) return;
+
+    const res = await fetch(`/api/buildings/${buildingId}/flats/${flatId}/`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        }
+    });
+
+    if (res.ok) {
+        location.reload();
+    } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Nie udało się usunąć mieszkania.");
+    }
+}
+
+
 </script>
 {% endblock %}

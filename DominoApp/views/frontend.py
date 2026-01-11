@@ -35,3 +35,28 @@ def flat_details_view(request, building_id, flat_id):
         'building_id': building_id,
         'flat_id': flat_id
     })
+
+def profile_view(request):
+    return render(request, "DominoApp/profile.html")
+
+def announcements_view(request):
+    return render(request, "DominoApp/announcements.html")
+
+def my_flats_view(request):
+    return render(request, "DominoApp/my_flats.html")
+
+def my_rents_view(request):
+    return render(request, "DominoApp/my_rents.html")
+
+def my_reports_view(request):
+    return render(request, "DominoApp/my_reports.html")
+
+def admin_reports_view(request):
+    return render(request, "DominoApp/admin_reports.html")
+
+def admin_users_view(request):
+    return render(request, "DominoApp/admin_users.html")
+
+
+
+

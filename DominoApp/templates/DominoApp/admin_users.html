@@ -1,0 +1,167 @@
+{% extends "DominoApp/base.html" %}
+{% block title %}Użytkownicy (Admin){% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Użytkownicy</h2>
+        <div class="text-muted">Panel administratora — lista i tworzenie kont</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+            + Dodaj użytkownika
+        </button>
+    </div>
+</div>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Imię</th>
+                    <th>Nazwisko</th>
+                    <th>Email</th>
+                    <th>Rola</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="usersTable">
+                <tr><td colspan="6" class="text-muted text-center py-4">Ładowanie...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal dodawania użytkownika -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Dodaj użytkownika</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-user-form">
+          <div class="mb-3">
+            <label class="form-label">Imię</label>
+            <input id="uName" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nazwisko</label>
+            <input id="uSurname" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input id="uEmail" type="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Hasło tymczasowe</label>
+            <input id="uPass" type="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rola</label>
+            <select id="uRole" class="form-select">
+              <option value="RESIDENT">RESIDENT</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">Utwórz</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem("authToken");
+const role = localStorage.getItem("userRole");
+
+function showError(msg) {
+    const b = document.getElementById("errorBox");
+    b.classList.remove("d-none");
+    b.innerText = msg;
+}
+
+async function loadUsers() {
+    const tbody = document.getElementById("usersTable");
+    tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Ładowanie...</td></tr>`;
+
+    const res = await fetch("/api/users/", {
+        headers: { "Authorization": "Token " + token }
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "Nie udało się pobrać użytkowników.");
+
+    if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Brak użytkowników.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    data.forEach(u => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${u.UserId}</td>
+            <td>${u.UserName}</td>
+            <td>${u.UserSurname}</td>
+            <td>${u.UserEmail}</td>
+            <td><span class="badge bg-dark">${u.UserRole}</span></td>
+            <td>${u.UserStatus ? "Aktywny" : "Nieaktywny"}</td>
+          </tr>
+        `;
+    });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!token) { window.location.href = "/login/"; return; }
+    if (role !== "ADMIN") { window.location.href = "/dashboard/"; return; }
+
+    try { await loadUsers(); }
+    catch(e){ showError(e.message); }
+});
+
+document.getElementById("add-user-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        UserName: document.getElementById("uName").value,
+        UserSurname: document.getElementById("uSurname").value,
+        UserEmail: document.getElementById("uEmail").value,
+        UserPassword: document.getElementById("uPass").value,
+        UserRole: document.getElementById("uRole").value
+    };
+
+    const res = await fetch("/api/users/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        alert(data.error || JSON.stringify(data) || "Nie udało się dodać użytkownika.");
+        return;
+    }
+
+    // zamknij modal
+    const modalEl = document.getElementById("addUserModal");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal.hide();
+
+    e.target.reset();
+    await loadUsers();
+});
+</script>
+{% endblock %}

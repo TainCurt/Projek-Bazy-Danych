@@ -1,0 +1,206 @@
+{% extends "DominoApp/base.html" %}
+{% block title %}Zgłoszenia (Admin){% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Zgłoszenia</h2>
+        <div class="text-muted">Panel administratora — filtruj i aktualizuj status zgłoszeń</div>
+    </div>
+    <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+</div>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+<div id="successBox" class="alert alert-success d-none"></div>
+
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body d-flex flex-column flex-md-row gap-2 align-items-md-end justify-content-between">
+        <div class="d-flex flex-column">
+            <label class="form-label mb-1">Status</label>
+            <select id="statusFilter" class="form-select" style="max-width: 220px;">
+                <option value="">Wszystkie</option>
+                <option value="WAITING">WAITING</option>
+                <option value="DONE">DONE</option>
+                <option value="ABANDONED">ABANDONED</option>
+            </select>
+        </div>
+
+        <div class="d-flex flex-column">
+            <label class="form-label mb-1">Budynek</label>
+            <select id="buildingFilter" class="form-select" style="max-width: 420px;">
+                <option value="">Wszystkie</option>
+            </select>
+        </div>
+
+        <button id="refreshBtn" class="btn btn-outline-primary">Odśwież</button>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>Typ</th>
+                    <th>Tytuł</th>
+                    <th>Budynek</th>
+                    <th>Status</th>
+                    <th class="text-end">Akcja</th>
+                </tr>
+            </thead>
+            <tbody id="reportsTable">
+                <tr><td colspan="7" class="text-muted text-center py-4">Ładowanie...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem("authToken");
+const role = localStorage.getItem("userRole");
+
+function showError(msg) {
+    const b = document.getElementById("errorBox");
+    b.classList.remove("d-none");
+    b.innerText = msg;
+}
+function clearError() {
+    const b = document.getElementById("errorBox");
+    b.classList.add("d-none");
+    b.innerText = "";
+}
+function showSuccess(msg) {
+    const b = document.getElementById("successBox");
+    b.classList.remove("d-none");
+    b.innerText = msg;
+    setTimeout(() => b.classList.add("d-none"), 2000);
+}
+
+function fmtDate(dt) {
+    if (!dt) return "-";
+    return String(dt).replace("T"," ").slice(0,19);
+}
+
+function buildingLabel(b) {
+    return `${b.BuildingCity}, ${b.BuildingStreet} ${b.BuildingNumber} (#${b.BuildingId})`;
+}
+
+async function loadBuildings() {
+    const sel = document.getElementById("buildingFilter");
+    sel.innerHTML = `<option value="">Wszystkie</option>`;
+
+    const res = await fetch("/api/buildings/", {
+        headers: { "Authorization": "Token " + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Nie udało się pobrać budynków.");
+
+    data.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = b.BuildingId;
+        opt.textContent = buildingLabel(b);
+        sel.appendChild(opt);
+    });
+}
+
+function buildQuery() {
+    const status = document.getElementById("statusFilter").value;
+    const buildingId = document.getElementById("buildingFilter").value;
+
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (buildingId) params.set("building_id", buildingId);
+
+    const qs = params.toString();
+    return qs ? `/api/reports/?${qs}` : `/api/reports/`;
+}
+
+function statusSelect(id, current) {
+    const opts = ["WAITING","DONE","ABANDONED"].map(s => {
+        const sel = s === current ? "selected" : "";
+        return `<option value="${s}" ${sel}>${s}</option>`;
+    }).join("");
+    return `<select class="form-select form-select-sm" id="st-${id}" style="max-width:140px;">${opts}</select>`;
+}
+
+async function loadReports() {
+    const tbody = document.getElementById("reportsTable");
+    tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center py-4">Ładowanie...</td></tr>`;
+
+    const url = buildQuery();
+    const res = await fetch(url, {
+        headers: { "Authorization": "Token " + token }
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "Nie udało się pobrać zgłoszeń.");
+
+    if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-muted text-center py-4">Brak zgłoszeń.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    data.forEach(r => {
+        const building = r.BuildingId ? `#${r.BuildingId}` : "-";
+        tbody.innerHTML += `
+            <tr>
+                <td>${r.ReportId}</td>
+                <td>${fmtDate(r.ReportTime)}</td>
+                <td>${r.ReportType}</td>
+                <td>${r.ReportTitle}</td>
+                <td>${building}</td>
+                <td>${statusSelect(r.ReportId, r.ReportStatus)}</td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-primary" onclick="updateStatus(${r.ReportId})">
+                        Zapisz
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+async function updateStatus(reportId) {
+    clearError();
+    try {
+        const newStatus = document.getElementById("st-" + reportId).value;
+
+        const res = await fetch(`/api/reports/${reportId}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Token " + token,
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({ ReportStatus: newStatus })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Nie udało się zmienić statusu.");
+
+        showSuccess("Status zapisany.");
+        await loadReports();
+    } catch (e) {
+        showError(e.message);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!token) { window.location.href = "/login/"; return; }
+    if (role !== "ADMIN") { window.location.href = "/dashboard/"; return; }
+
+    try {
+        clearError();
+        await loadBuildings();
+        await loadReports();
+    } catch(e) {
+        showError(e.message);
+    }
+
+    document.getElementById("refreshBtn").addEventListener("click", loadReports);
+});
+</script>
+{% endblock %}

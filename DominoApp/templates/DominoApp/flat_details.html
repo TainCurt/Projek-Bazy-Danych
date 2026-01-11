@@ -24,7 +24,9 @@
         <div class="card shadow-sm">
             <div class="card-header d-flex justify-content-between align-items-center bg-light">
                 <h5 class="mb-0">Historia Opłat</h5>
-                <button class="btn btn-sm btn-outline-success">+ Dodaj opłatę</button>
+                <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addRentModal">
+                    + Dodaj opłatę
+                </button>
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
@@ -33,6 +35,7 @@
                             <th>Data</th>
                             <th>Kwota</th>
                             <th>Status</th>
+                            <th class="text-end">Akcje</th>
                         </tr>
                     </thead>
                     <tbody id="rents-list">
@@ -42,6 +45,195 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="addRentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Dodaj opłatę</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="add-rent-form">
+          <div class="row g-2">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Miesiąc</label>
+              <input type="number" id="rentMonth" class="form-control" min="1" max="12" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Rok</label>
+              <input type="number" id="rentYear" class="form-control" min="2000" max="2100" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Kwota</label>
+            <input type="number" step="0.01" id="rentAmount" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Termin płatności</label>
+            <input type="date" id="rentDue" class="form-control" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select id="rentStatus" class="form-select">
+              <option value="PENDING">PENDING</option>
+              <option value="PAID">PAID</option>
+            </select>
+          </div>
+
+          <div class="mb-3 d-none" id="paidDateBox">
+            <label class="form-label">Data zapłaty</label>
+            <input type="date" id="rentPaidDate" class="form-control">
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">Zapisz</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editRentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edytuj opłatę</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="edit-rent-form">
+          <input type="hidden" id="editRentId">
+
+          <!-- ukryte pola potrzebne do pełnego PUT -->
+          <input type="hidden" id="editRentMonth">
+          <input type="hidden" id="editRentYear">
+          <input type="hidden" id="editRentAmount">
+          <input type="hidden" id="editRentDue">
+
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select id="editRentStatus" class="form-select">
+              <option value="PENDING">PENDING</option>
+              <option value="PAID">PAID</option>
+            </select>
+          </div>
+
+          <div class="mb-3 d-none" id="editPaidDateBox">
+            <label class="form-label">Data zapłaty</label>
+            <input type="date" id="editRentDate" class="form-control">
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">Zapisz zmiany</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Sekcja: Lokatorzy / właściciel -->
+<div class="card shadow-sm mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center bg-light">
+    <h5 class="mb-0">Lokatorzy / właściciel</h5>
+    <button id="addTenantBtn"
+            class="btn btn-sm btn-outline-primary d-none"
+            data-bs-toggle="modal"
+            data-bs-target="#addTenantModal">
+      + Dodaj przypisanie
+    </button>
+  </div>
+
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Rola</th>
+          <th>Użytkownik (ID)</th>
+          <th>Od</th>
+          <th>Do</th>
+          <th class="text-end">Akcje</th>
+        </tr>
+      </thead>
+      <tbody id="tenants-list">
+        <tr><td colspan="5" class="text-muted text-center py-4">Ładowanie...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal: dodawanie przypisania -->
+<div class="modal fade" id="addTenantModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Dodaj przypisanie do mieszkania</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="add-tenant-form">
+          <div class="mb-3">
+            <label class="form-label">Użytkownik</label>
+            <select id="tenantUserId" class="form-select" required></select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Rola w mieszkaniu</label>
+            <select id="tenantRole" class="form-select" required>
+              <option value="TENANT">TENANT (najemca)</option>
+              <option value="OWNER">OWNER (właściciel)</option>
+            </select>
+            <div class="form-text">OWNER może być aktywny tylko jeden (backend to pilnuje).</div>
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">Dodaj</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: edycja przypisania -->
+<div class="modal fade" id="editUserFlatModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edytuj przypisanie</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <form id="edit-userflat-form">
+          <input type="hidden" id="editUserFlatId">
+          <input type="hidden" id="editUserId">
+          <input type="hidden" id="editUserFlatDateFrom">
+
+          <div class="mb-3">
+            <label class="form-label">Rola</label>
+            <select id="editUserFlatRole" class="form-select">
+              <option value="TENANT">TENANT</option>
+              <option value="OWNER">OWNER</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Data zakończenia (Do)</label>
+            <input type="date" id="editUserFlatDateTo" class="form-control">
+            <div class="form-text">Zostaw puste, aby przypisanie było aktywne.</div>
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">Zapisz zmiany</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
 
 <script>
 const bId = "{{ building_id }}";
@@ -62,23 +254,37 @@ async function loadFlatDetails() {
         document.getElementById('info-area').innerText = flat.FlatArea;
 
         // 2. Pobierz historię czynszów
-        const rentRes = await fetch(`/api/buildings/${bId}/flats/${fId}/rents/`, {
+        const rentRes = await fetch(`/api/buildings/${bId}/flats/${fId}/rent/`, {
             headers: { 'Authorization': 'Token ' + token }
         });
         const rents = await rentRes.json();
         const rentsTable = document.getElementById('rents-list');
         
         if (rents.length === 0) {
-            rentsTable.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Brak zarejestrowanych opłat</td></tr>';
+            rentsTable.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Brak zarejestrowanych opłat</td></tr>';
         } else {
             rents.forEach(r => {
                 const statusClass = r.RentStatus === 'PAID' ? 'bg-success' : 'bg-warning';
+                const dateText = (r.RentStatus === 'PAID') ? (r.RentDate || 'Brak daty') : '-';
+
                 rentsTable.innerHTML += `
-                    <tr>
-                        <td>${r.RentDate || 'Brak daty'}</td>
-                        <td>${r.RentAmount} zł</td>
-                        <td><span class="badge ${statusClass}">${r.RentStatus}</span></td>
-                    </tr>`;
+                <tr>
+                    <td>${dateText}</td>
+                    <td>${r.RentAmount} zł</td>
+                    <td><span class="badge ${statusClass}">${r.RentStatus}</span></td>
+                    <td class="text-end">
+                    <button class="btn btn-sm btn-outline-primary"
+                            onclick="openEditRent(${r.RentId},
+                                                    '${r.RentStatus}',
+                                                    '${r.RentDate || ''}',
+                                                    '${r.RentMonth}',
+                                                    '${r.RentYear}',
+                                                    '${r.RentAmount}',
+                                                    '${r.RentDateDue || ''}')">
+                        Edytuj
+                    </button>
+                    </td>
+                </tr>`;
             });
         }
     } catch (err) {
@@ -87,5 +293,312 @@ async function loadFlatDetails() {
 }
 
 document.addEventListener('DOMContentLoaded', loadFlatDetails);
+
+// pokazywanie daty zapłaty gdy status=PAID
+document.getElementById("rentStatus").addEventListener("change", (e) => {
+    const box = document.getElementById("paidDateBox");
+    if (e.target.value === "PAID") box.classList.remove("d-none");
+    else box.classList.add("d-none");
+});
+
+document.getElementById("add-rent-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        RentMonth: parseInt(document.getElementById("rentMonth").value),
+        RentYear: parseInt(document.getElementById("rentYear").value),
+        RentAmount: parseFloat(document.getElementById("rentAmount").value),
+        RentDateDue: document.getElementById("rentDue").value,
+        RentStatus: document.getElementById("rentStatus").value,
+        RentDate: document.getElementById("rentStatus").value === "PAID"
+            ? (document.getElementById("rentPaidDate").value || null)
+            : null
+    };
+
+    const res = await fetch(`/api/buildings/${bId}/flats/${fId}/rent/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        const modalEl = document.getElementById("addRentModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        location.reload();
+    } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Błąd podczas dodawania opłaty.");
+    }
+});
+
+function openEditRent(rentId, status, rentDate, month, year, amount, due) {
+    document.getElementById("editRentId").value = rentId;
+
+    document.getElementById("editRentMonth").value = month;
+    document.getElementById("editRentYear").value = year;
+    document.getElementById("editRentAmount").value = amount;
+    document.getElementById("editRentDue").value = due;
+
+    document.getElementById("editRentStatus").value = status;
+
+    const box = document.getElementById("editPaidDateBox");
+    const dateInput = document.getElementById("editRentDate");
+
+    if (status === "PAID") {
+        box.classList.remove("d-none");
+        dateInput.value = rentDate ? rentDate.slice(0,10) : "";
+    } else {
+        box.classList.add("d-none");
+        dateInput.value = "";
+    }
+
+    const modalEl = document.getElementById("editRentModal");
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+}
+
+document.getElementById("editRentStatus").addEventListener("change", (e) => {
+    const box = document.getElementById("editPaidDateBox");
+    if (e.target.value === "PAID") box.classList.remove("d-none");
+    else box.classList.add("d-none");
+});
+
+document.getElementById("edit-rent-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const rentId = document.getElementById("editRentId").value;
+    const newStatus = document.getElementById("editRentStatus").value;
+
+    const payload = {
+        FlatId: parseInt(fId),
+        RentMonth: parseInt(document.getElementById("editRentMonth").value),
+        RentYear: parseInt(document.getElementById("editRentYear").value),
+        RentAmount: parseFloat(document.getElementById("editRentAmount").value),
+        RentDateDue: document.getElementById("editRentDue").value,
+        RentStatus: newStatus,
+        RentDate: (newStatus === "PAID")
+          ? (document.getElementById("editRentDate").value || null)
+          : null
+    };
+
+    const res = await fetch(`/api/buildings/${bId}/flats/${fId}/rent/${rentId}/`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        const modalEl = document.getElementById("editRentModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        location.reload();
+    } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || JSON.stringify(err) || "Nie udało się zaktualizować opłaty.");
+    }
+});
+
+// --- Lokatorzy / właściciel (UserFlat) ---
+const userRole = localStorage.getItem("userRole");
+
+async function loadUsersForTenantSelect() {
+    const sel = document.getElementById("tenantUserId");
+    sel.innerHTML = "";
+
+    const res = await fetch("/api/users/", {
+        headers: { "Authorization": "Token " + token }
+    });
+    const users = await res.json();
+
+    if (!res.ok) throw new Error(users.error || "Nie udało się pobrać listy użytkowników.");
+
+    users.forEach(u => {
+        const opt = document.createElement("option");
+        opt.value = u.UserId;
+        opt.textContent = `${u.UserName} ${u.UserSurname} (${u.UserEmail}) [${u.UserRole}]`;
+        sel.appendChild(opt);
+    });
+}
+
+async function loadTenants() {
+    const tbody = document.getElementById("tenants-list");
+    tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center py-4">Ładowanie...</td></tr>`;
+
+    const res = await fetch(`/api/buildings/${bId}/flats/${fId}/tenants/`, {
+        headers: { "Authorization": "Token " + token }
+    });
+    const list = await res.json();
+
+    if (!res.ok) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-4">Błąd pobierania przypisań</td></tr>`;
+        return;
+    }
+
+    if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center py-4">Brak przypisań do tego mieszkania.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    list.forEach(uf => {
+        const from = uf.UserFlatDateFrom || "-";
+        const to = uf.UserFlatDateTo || "-";
+        const role = uf.UserFlatRole || "-";
+
+        tbody.innerHTML += `
+          <tr>
+            <td><span class="badge bg-dark">${role}</span></td>
+            <td>#${uf.UserId}</td>
+            <td>${from}</td>
+            <td>${to}</td>
+            <td class="text-end">
+                ${userRole === "ADMIN" ? `
+                    <button class="btn btn-sm btn-outline-primary me-2"
+                            onclick="openEditUserFlat(${uf.UserFlatId},
+                                                    ${uf.UserId},
+                                                    '${uf.UserFlatRole}',
+                                                    '${uf.UserFlatDateFrom || ''}',
+                                                    '${uf.UserFlatDateTo || ''}')">
+                    Edytuj
+                    </button>
+
+                    <button class="btn btn-sm btn-outline-danger"
+                            onclick="deleteTenant(${uf.UserFlatId})">
+                    Usuń
+                    </button>
+                ` : ``}
+                </td>
+          </tr>
+        `;
+    });
+}
+
+async function deleteTenant(userFlatId) {
+    if (!confirm("Usunąć to przypisanie?")) return;
+
+    const res = await fetch(`/api/buildings/${bId}/flats/${fId}/tenants/${userFlatId}/`, {
+        method: "DELETE",
+        headers: {
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        }
+    });
+
+    if (res.ok) {
+        await loadTenants();
+    } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.error || "Nie udało się usunąć przypisania.");
+    }
+}
+
+document.getElementById("add-tenant-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        UserId: parseInt(document.getElementById("tenantUserId").value),
+        UserFlatRole: document.getElementById("tenantRole").value
+    };
+
+    const res = await fetch(`/api/buildings/${bId}/flats/${fId}/tenants/`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        alert(data.error || JSON.stringify(data) || "Nie udało się dodać przypisania.");
+        return;
+    }
+
+    const modalEl = document.getElementById("addTenantModal");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal.hide();
+
+    await loadTenants();
+});
+
+// uruchomienie po starcie strony
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!token) return;
+
+    if (userRole === "ADMIN") {
+        document.getElementById("addTenantBtn").classList.remove("d-none");
+        try { await loadUsersForTenantSelect(); } catch(e){ console.warn(e); }
+    }
+
+    await loadTenants();
+});
+
+function openEditUserFlat(userFlatId, userId, role, dateFrom, dateTo) {
+    document.getElementById("editUserFlatId").value = userFlatId;
+    document.getElementById("editUserId").value = userId;
+    document.getElementById("editUserFlatRole").value = role;
+
+    // zapisz DateFrom (ważne dla pełnego PUT)
+    document.getElementById("editUserFlatDateFrom").value = dateFrom ? dateFrom.slice(0,10) : "";
+
+    const dateInput = document.getElementById("editUserFlatDateTo");
+    dateInput.value = dateTo ? dateTo.slice(0,10) : "";
+
+    const modal = new bootstrap.Modal(document.getElementById("editUserFlatModal"));
+    modal.show();
+}
+
+
+
+document.getElementById("edit-userflat-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const userFlatId = document.getElementById("editUserFlatId").value;
+
+    const payload = {
+        UserId: parseInt(document.getElementById("editUserId").value),
+        FlatId: parseInt(fId), // możesz dać, nawet jeśli backend i tak nadpisze
+        UserFlatRole: document.getElementById("editUserFlatRole").value,
+        UserFlatDateFrom: document.getElementById("editUserFlatDateFrom").value, // REQUIRED przy pełnym PUT
+        UserFlatDateTo: document.getElementById("editUserFlatDateTo").value || null
+    };
+
+    const res = await fetch(`/api/buildings/${bId}/flats/${fId}/tenants/${userFlatId}/`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Token " + token,
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        alert(data.error || JSON.stringify(data) || "Nie udało się zapisać zmian.");
+        return;
+    }
+
+    const modalEl = document.getElementById("editUserFlatModal");
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal.hide();
+
+    await loadTenants();
+});
+
+
 </script>
 {% endblock %}

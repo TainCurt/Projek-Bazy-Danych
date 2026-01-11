@@ -1,0 +1,307 @@
+{% extends "DominoApp/base.html" %}
+{% block title %}Moje zgłoszenia{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Moje zgłoszenia</h2>
+        <div class="text-muted">Twórz zgłoszenia i śledź ich status</div>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+        <a href="/my/flats/" class="btn btn-outline-primary btn-sm">Moje mieszkania</a>
+    </div>
+</div>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+<div id="successBox" class="alert alert-success d-none"></div>
+
+<div class="row g-3">
+    <!-- Formularz -->
+    <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light">
+                <div class="fw-semibold">Nowe zgłoszenie</div>
+            </div>
+            <div class="card-body">
+                <form id="reportForm">
+                    <div class="mb-3">
+                        <label class="form-label">Typ zgłoszenia</label>
+                        <select id="type" class="form-select" required>
+                            <option value="GENERAL">GENERAL (ogólne)</option>
+                            <option value="FLAT">FLAT (dotyczy mieszkania)</option>
+                            <option value="BUILDING">BUILDING (dotyczy budynku)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3 d-none" id="flatBox">
+                        <label class="form-label">Wybierz mieszkanie</label>
+                        <select id="flatSelect" class="form-select"></select>
+                        <div class="form-text">Tylko Twoje mieszkania.</div>
+                    </div>
+
+                    <div class="mb-3 d-none" id="buildingBox">
+                        <label class="form-label">Wybierz budynek</label>
+                        <select id="buildingSelect" class="form-select"></select>
+                        <div class="form-text">Tylko budynki, w których masz mieszkanie.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tytuł</label>
+                        <input id="title" class="form-control" required maxlength="100">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Kategoria</label>
+                        <input id="category" class="form-control" required maxlength="500" placeholder="np. instalacja, hałas, woda...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Opis</label>
+                        <textarea id="desc" class="form-control" rows="4" required></textarea>
+                    </div>
+
+                    <button class="btn btn-primary w-100" type="submit">
+                        Wyślij zgłoszenie
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista zgłoszeń -->
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <div class="fw-semibold">Twoje zgłoszenia</div>
+                <button class="btn btn-outline-secondary btn-sm" id="refreshBtn">Odśwież</button>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Data</th>
+                            <th>Typ</th>
+                            <th>Tytuł</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportsTable">
+                        <tr><td colspan="4" class="text-muted text-center py-4">Ładowanie...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-muted small mt-2">
+            Statusy: WAITING / DONE / ABANDONED (ustawiane przez administratora).
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem("authToken");
+
+function showError(msg) {
+    const b = document.getElementById("errorBox");
+    b.classList.remove("d-none");
+    b.innerText = msg;
+}
+function clearError() {
+    const b = document.getElementById("errorBox");
+    b.classList.add("d-none");
+    b.innerText = "";
+}
+function showSuccess(msg) {
+    const b = document.getElementById("successBox");
+    b.classList.remove("d-none");
+    b.innerText = msg;
+    setTimeout(() => b.classList.add("d-none"), 2500);
+}
+
+function statusBadge(s) {
+    if (s === "DONE") return `<span class="badge bg-success">DONE</span>`;
+    if (s === "ABANDONED") return `<span class="badge bg-secondary">ABANDONED</span>`;
+    return `<span class="badge bg-warning text-dark">WAITING</span>`;
+}
+
+let myFlats = [];          // lista flatów z /api/my/flats/
+let buildingsMap = new Map(); // buildingId -> {city, street, number} (na potrzeby opisu w select)
+
+async function loadMyFlats() {
+    const res = await fetch("/api/my/flats/", {
+        headers: { "Authorization": "Token " + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Nie udało się pobrać mieszkań.");
+    myFlats = data;
+}
+
+function fillFlatSelect() {
+    const sel = document.getElementById("flatSelect");
+    sel.innerHTML = "";
+    const activeFlatId = localStorage.getItem("activeFlatId");
+
+    myFlats.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = f.FlatId;
+        opt.textContent = `Mieszkanie ${f.FlatNumber} (budynek #${f.BuildingId})`;
+        if (activeFlatId && String(f.FlatId) === String(activeFlatId)) opt.selected = true;
+        sel.appendChild(opt);
+    });
+}
+
+async function loadBuildingsForMyFlats() {
+    // Minimalnie: do wyboru BUILDING wystarczą same ID budynków.
+    // Żeby było czytelniej w select, pobieramy /api/buildings/ i budujemy mapę adresów.
+    const res = await fetch("/api/buildings/", {
+        headers: { "Authorization": "Token " + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Nie udało się pobrać budynków.");
+
+    buildingsMap = new Map();
+    data.forEach(b => {
+        buildingsMap.set(String(b.BuildingId), b);
+    });
+}
+
+function fillBuildingSelect() {
+    const sel = document.getElementById("buildingSelect");
+    sel.innerHTML = "";
+
+    // unikalne buildingId wynikające z moich mieszkań
+    const uniqueBuildingIds = Array.from(new Set(myFlats.map(f => String(f.BuildingId))));
+
+    uniqueBuildingIds.forEach(id => {
+        const b = buildingsMap.get(String(id));
+        const label = b
+            ? `${b.BuildingCity}, ${b.BuildingStreet} ${b.BuildingNumber} (#${b.BuildingId})`
+            : `Budynek #${id}`;
+
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = label;
+        sel.appendChild(opt);
+    });
+
+    // jeśli jest activeBuildingId, to zaznacz
+    const activeBuildingId = localStorage.getItem("activeBuildingId");
+    if (activeBuildingId) {
+        const found = Array.from(sel.options).some(o => o.value === String(activeBuildingId));
+        if (found) sel.value = String(activeBuildingId);
+    }
+}
+
+async function loadMyReports() {
+    const tbody = document.getElementById("reportsTable");
+    tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-4">Ładowanie...</td></tr>`;
+
+    const res = await fetch("/api/my/reports/", {
+        headers: { "Authorization": "Token " + token }
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || "Nie udało się pobrać zgłoszeń.");
+
+    if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-4">Brak zgłoszeń.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    data.forEach(r => {
+        const dt = r.ReportTime ? String(r.ReportTime).replace("T"," ").slice(0,19) : "-";
+        tbody.innerHTML += `
+            <tr>
+                <td>${dt}</td>
+                <td>${r.ReportType}</td>
+                <td>${r.ReportTitle}</td>
+                <td>${statusBadge(r.ReportStatus)}</td>
+            </tr>
+        `;
+    });
+}
+
+function updateTypeUI() {
+    const t = document.getElementById("type").value;
+    const flatBox = document.getElementById("flatBox");
+    const buildingBox = document.getElementById("buildingBox");
+
+    flatBox.classList.add("d-none");
+    buildingBox.classList.add("d-none");
+
+    if (t === "FLAT") flatBox.classList.remove("d-none");
+    if (t === "BUILDING") buildingBox.classList.remove("d-none");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!token) { window.location.href = "/login/"; return; }
+
+    try {
+        clearError();
+
+        await loadMyFlats();
+        fillFlatSelect();
+
+        await loadBuildingsForMyFlats();
+        fillBuildingSelect();
+
+        updateTypeUI();
+        await loadMyReports();
+
+    } catch (e) {
+        showError(e.message);
+    }
+
+    document.getElementById("type").addEventListener("change", updateTypeUI);
+    document.getElementById("refreshBtn").addEventListener("click", async () => {
+        try { clearError(); await loadMyReports(); } catch(e){ showError(e.message); }
+    });
+});
+
+document.getElementById("reportForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    clearError();
+
+    try {
+        const type = document.getElementById("type").value;
+
+        const payload = {
+            ReportType: type,
+            ReportTitle: document.getElementById("title").value,
+            ReportCategory: document.getElementById("category").value,
+            ReportDescription: document.getElementById("desc").value,
+        };
+
+        if (type === "FLAT") {
+            payload.FlatId = parseInt(document.getElementById("flatSelect").value);
+        } else if (type === "BUILDING") {
+            payload.BuildingId = parseInt(document.getElementById("buildingSelect").value);
+        }
+        // GENERAL: nic nie dodajemy
+
+        const res = await fetch("/api/my/reports/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Token " + token,
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Nie udało się utworzyć zgłoszenia.");
+
+        showSuccess("Zgłoszenie zostało dodane.");
+        e.target.reset();
+        updateTypeUI();
+        await loadMyReports();
+
+    } catch (err) {
+        showError(err.message);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "DominoApp/base.html" %}
+
+{% block title %}Mój profil{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0">Mój profil</h2>
+    <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+</div>
+
+<div id="profile-error" class="alert alert-danger d-none"></div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="text-muted small">Imię</div>
+                <div id="p-name" class="fw-semibold">-</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted small">Nazwisko</div>
+                <div id="p-surname" class="fw-semibold">-</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted small">Email</div>
+                <div id="p-email" class="fw-semibold">-</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted small">Rola</div>
+                <div id="p-role" class="fw-semibold">-</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted small">Status konta</div>
+                <div id="p-status" class="fw-semibold">-</div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted small">Data rejestracji</div>
+                <div id="p-date" class="fw-semibold">-</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async function () {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+        window.location.href = "/login/";
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/me/", {
+            headers: { "Authorization": "Token " + token }
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || "Nie udało się pobrać profilu.");
+        }
+
+        document.getElementById("p-name").innerText = data.UserName ?? "-";
+        document.getElementById("p-surname").innerText = data.UserSurname ?? "-";
+        document.getElementById("p-email").innerText = data.UserEmail ?? "-";
+        document.getElementById("p-role").innerText = data.UserRole ?? "-";
+        document.getElementById("p-status").innerText = (data.UserStatus ? "Aktywne" : "Nieaktywne");
+        document.getElementById("p-date").innerText = data.UserDate ?? "-";
+
+    } catch (err) {
+        const box = document.getElementById("profile-error");
+        box.classList.remove("d-none");
+        box.innerText = err.message;
+    }
+});
+</script>
+{% endblock %}

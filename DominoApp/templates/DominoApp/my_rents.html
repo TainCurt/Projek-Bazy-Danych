@@ -1,0 +1,155 @@
+{% extends "DominoApp/base.html" %}
+{% block title %}Moje opłaty{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Moje opłaty</h2>
+        <div class="text-muted">Przegląd naliczeń dla Twoich mieszkań</div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+        <a href="/my/flats/" class="btn btn-outline-primary btn-sm">Moje mieszkania</a>
+    </div>
+</div>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+
+<div class="card shadow-sm border-0 mb-3">
+    <div class="card-body d-flex flex-column flex-md-row gap-2 align-items-md-center justify-content-between">
+        <div class="d-flex flex-column">
+            <span class="text-muted small">Filtr mieszkania</span>
+            <select id="flatSelect" class="form-select" style="max-width: 360px;">
+                <option value="">Wszystkie moje mieszkania</option>
+            </select>
+        </div>
+
+        <div class="text-muted small">
+            Statusy: <span class="badge bg-success">PAID</span>
+            <span class="badge bg-warning text-dark">PENDING</span>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Mieszkanie</th>
+                    <th>Okres</th>
+                    <th>Kwota</th>
+                    <th>Status</th>
+                    <th>Termin</th>
+                    <th>Data zapłaty</th>
+                </tr>
+            </thead>
+            <tbody id="rentsTable">
+                <tr><td colspan="6" class="text-muted text-center py-4">Ładowanie...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem("authToken");
+
+function showError(msg) {
+    const box = document.getElementById("errorBox");
+    box.classList.remove("d-none");
+    box.innerText = msg;
+}
+
+function badge(status) {
+    if (status === "PAID") return `<span class="badge bg-success">PAID</span>`;
+    return `<span class="badge bg-warning text-dark">PENDING</span>`;
+}
+
+async function loadMyFlatsIntoSelect() {
+    const select = document.getElementById("flatSelect");
+    const activeFlatId = localStorage.getItem("activeFlatId");
+
+    const res = await fetch("/api/my/flats/", {
+        headers: { "Authorization": "Token " + token }
+    });
+    const flats = await res.json();
+    if (!res.ok) throw new Error(flats.error || "Nie udało się pobrać mieszkań.");
+
+    flats.forEach(f => {
+        const opt = document.createElement("option");
+        opt.value = f.FlatId;
+        opt.textContent = `Mieszkanie ${f.FlatNumber} (budynek ${f.BuildingId})`;
+        if (activeFlatId && String(f.FlatId) === String(activeFlatId)) {
+            opt.selected = true;
+        }
+        select.appendChild(opt);
+    });
+
+    // Jeśli jest aktywne mieszkanie – od razu pokaż filtrowane opłaty
+    // Jeśli nie, zostaje "Wszystkie"
+    return select.value;
+}
+
+async function loadRents(flatId) {
+    const tbody = document.getElementById("rentsTable");
+    tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Ładowanie...</td></tr>`;
+
+    let url = "/api/my/rents/";
+    if (flatId) url += `?flat_id=${flatId}`;
+
+    const res = await fetch(url, {
+        headers: { "Authorization": "Token " + token }
+    });
+    const rents = await res.json();
+
+    if (!res.ok) {
+        throw new Error(rents.error || "Nie udało się pobrać opłat.");
+    }
+
+    if (!rents.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Brak opłat do wyświetlenia.</td></tr>`;
+        return;
+    }
+
+    // Dla czytelności pokażemy też FlatId (bo /api/my/rents/ zwraca tylko naliczenia)
+    // a mieszkanie ustalimy po FlatId.
+    rents.forEach(r => {
+        const period = `${String(r.RentMonth).padStart(2,'0')}/${r.RentYear}`;
+        const statusHtml = badge(r.RentStatus);
+
+        tbody.innerHTML += `
+            <tr>
+                <td>#${r.FlatId}</td>
+                <td>${period}</td>
+                <td>${r.RentAmount} zł</td>
+                <td>${statusHtml}</td>
+                <td>${r.RentDateDue || "-"}</td>
+                <td>${r.RentDate || "-"}</td>
+            </tr>
+        `;
+    });
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    if (!token) {
+        window.location.href = "/login/";
+        return;
+    }
+
+    try {
+        const initialFlatId = await loadMyFlatsIntoSelect();
+        await loadRents(initialFlatId);
+    } catch (e) {
+        showError(e.message);
+    }
+
+    document.getElementById("flatSelect").addEventListener("change", async (e) => {
+        const flatId = e.target.value;
+        // jeśli user wybierze konkretne mieszkanie, możesz też zsynchronizować "aktywnie oglądane"
+        if (flatId) localStorage.setItem("activeFlatId", flatId);
+        await loadRents(flatId);
+    });
+});
+</script>
+{% endblock %}

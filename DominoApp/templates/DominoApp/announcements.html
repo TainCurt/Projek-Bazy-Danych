@@ -1,0 +1,228 @@
+{% extends "DominoApp/base.html" %}
+{% block title %}Ogłoszenia{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Ogłoszenia</h2>
+        <div class="text-muted">Aktualne komunikaty dla mieszkańców</div>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+        <button id="addBtn" class="btn btn-primary btn-sm d-none" data-bs-toggle="modal" data-bs-target="#addAnnouncementModal">
+            + Dodaj ogłoszenie
+        </button>
+    </div>
+</div>
+
+<div id="errorBox" class="alert alert-danger d-none"></div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body">
+        <div id="announcementsList" class="vstack gap-3">
+            <div class="text-muted">Ładowanie ogłoszeń...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: dodawanie ogłoszenia (ADMIN) -->
+<div class="modal fade" id="addAnnouncementModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Nowe ogłoszenie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zamknij"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    <div class="mb-3">
+                        <label class="form-label">Tytuł</label>
+                        <input id="title" class="form-control" required maxlength="100">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Treść</label>
+                        <textarea id="desc" class="form-control" rows="4" required></textarea>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Od</label>
+                            <input id="fromDate" type="date" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Do (opcjonalnie)</label>
+                            <input id="toDate" type="date" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <button class="btn btn-success w-100" type="submit">Zapisz</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const token = localStorage.getItem("authToken");
+const role = localStorage.getItem("userRole");
+
+function showError(msg) {
+    const box = document.getElementById("errorBox");
+    box.classList.remove("d-none");
+    box.innerText = msg;
+}
+
+function isActiveAnnouncement(a) {
+    // Filtr “aktywnych” ogłoszeń po stronie frontu:
+    // aktywne jeśli today >= AnnounFrom i (AnnounTo == null lub today <= AnnounTo)
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const from = a.AnnounFrom ? new Date(a.AnnounFrom) : null;
+    const to = a.AnnounTo ? new Date(a.AnnounTo) : null;
+
+    if (from) { from.setHours(0,0,0,0); }
+    if (to) { to.setHours(0,0,0,0); }
+
+    if (from && today < from) return false;
+    if (to && today > to) return false;
+    return true;
+}
+
+function formatRange(a) {
+    const from = a.AnnounFrom ? a.AnnounFrom : "-";
+    const to = a.AnnounTo ? a.AnnounTo : "bezterminowo";
+    return `${from} → ${to}`;
+}
+
+function renderAnnouncements(list) {
+    const root = document.getElementById("announcementsList");
+    root.innerHTML = "";
+
+    if (!list.length) {
+        root.innerHTML = `<div class="text-muted">Brak aktywnych ogłoszeń.</div>`;
+        return;
+    }
+
+    list.forEach(a => {
+        root.innerHTML += `
+            <div class="p-3 border rounded-3">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <div>
+                        <div class="fw-semibold fs-5">${a.AnnounTitle}</div>
+                        <div class="text-muted small">${formatRange(a)}</div>
+                    </div>
+                    ${role === 'ADMIN' ? `
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteAnnouncement(${a.AnnounId})">
+                            Usuń
+                        </button>
+                    ` : ``}
+                </div>
+                <div class="mt-2">${(a.AnnounDescription || "").replaceAll("\\n","<br>")}</div>
+            </div>
+        `;
+    });
+}
+
+async function fetchAnnouncements() {
+    if (!token) {
+        window.location.href = "/login/";
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/announ/", {
+            headers: { "Authorization": "Token " + token }
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || "Nie udało się pobrać ogłoszeń.");
+        }
+
+        // filtrujemy tylko aktywne
+        const active = data.filter(isActiveAnnouncement);
+        renderAnnouncements(active);
+    } catch (e) {
+        showError(e.message);
+    }
+}
+
+async function deleteAnnouncement(id) {
+    if (!confirm("Usunąć ogłoszenie?")) return;
+
+    try {
+        const res = await fetch(`/api/announ/${id}/`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": "Token " + token,
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        });
+
+        if (!res.ok) {
+            let data = {};
+            try { data = await res.json(); } catch {}
+            throw new Error(data.error || "Nie udało się usunąć ogłoszenia.");
+        }
+
+        await fetchAnnouncements();
+    } catch (e) {
+        showError(e.message);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    // tylko admin widzi przycisk dodawania
+    if (role === "ADMIN") {
+        document.getElementById("addBtn").classList.remove("d-none");
+    }
+    fetchAnnouncements();
+});
+
+// ADMIN: dodawanie ogłoszenia
+document.getElementById("addForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    try {
+        const payload = {
+            AnnounTitle: document.getElementById("title").value,
+            AnnounDescription: document.getElementById("desc").value,
+            AnnounFrom: document.getElementById("fromDate").value,
+            AnnounTo: document.getElementById("toDate").value || null
+        };
+
+        const res = await fetch("/api/announ/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Token " + token,
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.error || "Nie udało się dodać ogłoszenia.");
+        }
+
+        // zamknij modal
+        const modalEl = document.getElementById("addAnnouncementModal");
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+
+        // odśwież listę
+        await fetchAnnouncements();
+        e.target.reset();
+    } catch (e2) {
+        showError(e2.message);
+    }
+});
+</script>
+{% endblock %}
