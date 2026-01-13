@@ -9,10 +9,10 @@
     </div>
 
     <div class="d-flex gap-2">
-        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
         <button id="addBtn" class="btn btn-primary btn-sm d-none" data-bs-toggle="modal" data-bs-target="#addAnnouncementModal">
             + Dodaj ogłoszenie
         </button>
+        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm"> Powrót</a>
     </div>
 </div>
 
@@ -26,7 +26,6 @@
     </div>
 </div>
 
-<!-- Modal: dodawanie ogłoszenia (ADMIN) -->
 <div class="modal fade" id="addAnnouncementModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -77,8 +76,7 @@ function showError(msg) {
 }
 
 function isActiveAnnouncement(a) {
-    // Filtr “aktywnych” ogłoszeń po stronie frontu:
-    // aktywne jeśli today >= AnnounFrom i (AnnounTo == null lub today <= AnnounTo)
+
     const today = new Date();
     today.setHours(0,0,0,0);
 
@@ -144,7 +142,6 @@ async function fetchAnnouncements() {
             throw new Error(data.error || "Nie udało się pobrać ogłoszeń.");
         }
 
-        // filtrujemy tylko aktywne
         const active = data.filter(isActiveAnnouncement);
         renderAnnouncements(active);
     } catch (e) {
@@ -177,14 +174,12 @@ async function deleteAnnouncement(id) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // tylko admin widzi przycisk dodawania
     if (role === "ADMIN") {
         document.getElementById("addBtn").classList.remove("d-none");
     }
     fetchAnnouncements();
 });
 
-// ADMIN: dodawanie ogłoszenia
 document.getElementById("addForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -212,12 +207,11 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
             throw new Error(data.error || "Nie udało się dodać ogłoszenia.");
         }
 
-        // zamknij modal
+
         const modalEl = document.getElementById("addAnnouncementModal");
         const modal = bootstrap.Modal.getInstance(modalEl);
         modal.hide();
 
-        // odśwież listę
         await fetchAnnouncements();
         e.target.reset();
     } catch (e2) {
@@ -226,3 +220,6 @@ document.getElementById("addForm").addEventListener("submit", async (e) => {
 });
 </script>
 {% endblock %}
+
+
+

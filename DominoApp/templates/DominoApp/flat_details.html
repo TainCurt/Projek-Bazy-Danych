@@ -4,14 +4,14 @@
 
 {% block content %}
 <div class="mb-4">
-    <a href="/buildings/{{ building_id }}/" class="btn btn-outline-secondary btn-sm mb-3">← Powrót do budynku</a>
+    <a href="/buildings/{{ building_id }}/" class="btn btn-outline-secondary btn-sm mb-3">Powrót do budynku</a>
     <h2 id="flat-title">Ładowanie danych mieszkania...</h2>
 </div>
 
 <div class="row">
     <div class="col-md-4">
         <div class="card shadow-sm mb-4">
-            <div class="card-header bg-dark text-white">Specyfikacja lokalu</div>
+            <div class="card-header btn-outline-danger text-white">Specyfikacja lokalu</div>
             <div class="card-body" id="flat-info">
                 <p><strong>Numer:</strong> <span id="info-number">-</span></p>
                 <p><strong>Piętro:</strong> <span id="info-floor">-</span></p>
@@ -108,7 +108,6 @@
         <form id="edit-rent-form">
           <input type="hidden" id="editRentId">
 
-          <!-- ukryte pola potrzebne do pełnego PUT -->
           <input type="hidden" id="editRentMonth">
           <input type="hidden" id="editRentYear">
           <input type="hidden" id="editRentAmount">
@@ -134,7 +133,7 @@
   </div>
 </div>
 
-<!-- Sekcja: Lokatorzy / właściciel -->
+
 <div class="card shadow-sm mt-4">
   <div class="card-header d-flex justify-content-between align-items-center bg-light">
     <h5 class="mb-0">Lokatorzy / właściciel</h5>
@@ -164,7 +163,6 @@
   </div>
 </div>
 
-<!-- Modal: dodawanie przypisania -->
 <div class="modal fade" id="addTenantModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -196,7 +194,6 @@
   </div>
 </div>
 
-<!-- Modal: edycja przypisania -->
 <div class="modal fade" id="editUserFlatModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -242,7 +239,7 @@ const token = localStorage.getItem("authToken");
 
 async function loadFlatDetails() {
     try {
-        // 1. Pobierz dane mieszkania
+
         const flatRes = await fetch(`/api/buildings/${bId}/flats/${fId}/`, {
             headers: { 'Authorization': 'Token ' + token }
         });
@@ -253,7 +250,6 @@ async function loadFlatDetails() {
         document.getElementById('info-floor').innerText = flat.FlatFloor;
         document.getElementById('info-area').innerText = flat.FlatArea;
 
-        // 2. Pobierz historię czynszów
         const rentRes = await fetch(`/api/buildings/${bId}/flats/${fId}/rent/`, {
             headers: { 'Authorization': 'Token ' + token }
         });
@@ -294,7 +290,6 @@ async function loadFlatDetails() {
 
 document.addEventListener('DOMContentLoaded', loadFlatDetails);
 
-// pokazywanie daty zapłaty gdy status=PAID
 document.getElementById("rentStatus").addEventListener("change", (e) => {
     const box = document.getElementById("paidDateBox");
     if (e.target.value === "PAID") box.classList.remove("d-none");
@@ -407,7 +402,6 @@ document.getElementById("edit-rent-form").addEventListener("submit", async (e) =
     }
 });
 
-// --- Lokatorzy / właściciel (UserFlat) ---
 const userRole = localStorage.getItem("userRole");
 
 async function loadUsersForTenantSelect() {
@@ -533,7 +527,6 @@ document.getElementById("add-tenant-form").addEventListener("submit", async (e) 
     await loadTenants();
 });
 
-// uruchomienie po starcie strony
 document.addEventListener("DOMContentLoaded", async () => {
     if (!token) return;
 
@@ -550,7 +543,6 @@ function openEditUserFlat(userFlatId, userId, role, dateFrom, dateTo) {
     document.getElementById("editUserId").value = userId;
     document.getElementById("editUserFlatRole").value = role;
 
-    // zapisz DateFrom (ważne dla pełnego PUT)
     document.getElementById("editUserFlatDateFrom").value = dateFrom ? dateFrom.slice(0,10) : "";
 
     const dateInput = document.getElementById("editUserFlatDateTo");
@@ -569,9 +561,9 @@ document.getElementById("edit-userflat-form").addEventListener("submit", async (
 
     const payload = {
         UserId: parseInt(document.getElementById("editUserId").value),
-        FlatId: parseInt(fId), // możesz dać, nawet jeśli backend i tak nadpisze
+        FlatId: parseInt(fId), 
         UserFlatRole: document.getElementById("editUserFlatRole").value,
-        UserFlatDateFrom: document.getElementById("editUserFlatDateFrom").value, // REQUIRED przy pełnym PUT
+        UserFlatDateFrom: document.getElementById("editUserFlatDateFrom").value, 
         UserFlatDateTo: document.getElementById("editUserFlatDateTo").value || null
     };
 

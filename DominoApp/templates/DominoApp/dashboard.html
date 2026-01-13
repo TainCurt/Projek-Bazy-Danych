@@ -1,5 +1,5 @@
 {% extends "DominoApp/base.html" %}
-
+{% load static %}
 {% block title %}Pulpit nawigacyjny{% endblock %}
 
 {% block content %}
@@ -15,7 +15,9 @@
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-0 rounded-3">
                 <div class="card-body text-center p-4">
-                    <div class="fs-1 mb-3">📢</div>
+                        <div class="mb-3">
+                            <img src="{% static 'DominoApp/img/announ.png' %}" alt="Ogłoszenia" style="height: 64px; width: auto;">
+                        </div>
                     <h5 class="card-title">Ogłoszenia</h5>
                     <p class="card-text text-muted">Przeglądaj aktualne komunikaty dla mieszkańców.</p>
                     <a href="/announcements/" class="btn btn-outline-primary w-100">Otwórz</a>
@@ -26,7 +28,9 @@
         <div class="col-md-4 admin-only d-none">
             <div class="card h-100 shadow-sm border-primary border-opacity-25 rounded-3">
                 <div class="card-body text-center p-4">
-                    <div class="fs-1 mb-3">🏢</div>
+                    <div class="mb-3">
+                        <img src="{% static 'DominoApp/img/buildings.png' %}" alt="Zarządzanie Budynkami" style="height: 64px; width: auto;">
+                    </div>
                     <h5 class="card-title">Zarządzanie Budynkami</h5>
                     <p class="card-text text-muted">Dodawaj budynki, edytuj dane i zarządzaj lokalami.</p>
                     <a href="/buildings/" class="btn btn-primary w-100">Zarządzaj</a>
@@ -37,9 +41,11 @@
         <div class="col-md-4 admin-only d-none">
             <div class="card h-100 shadow-sm border-warning border-opacity-25 rounded-3">
                 <div class="card-body text-center p-4">
-                    <div class="fs-1 mb-3">🧾</div>
+                    <div class="mb-3">  
+                        <img src="{% static 'DominoApp/img/reports.png' %}" alt="Zgłoszenia" style="height: 64px; width: auto;">
+                    </div>
                     <h5 class="card-title">Zgłoszenia</h5>
-                    <p class="card-text text-muted">Przeglądaj zgłoszenia i zmieniaj ich status.</p>
+                    <p class="card-text text-muted">Przeglądaj zgłoszenia mieszkańców i zmieniaj ich status.</p>
                     <a href="/reports/admin/" class="btn btn-warning w-100">Otwórz</a>
                 </div>
             </div>
@@ -48,7 +54,9 @@
         <div class="col-md-4 admin-only d-none">
             <div class="card h-100 shadow-sm border-secondary border-opacity-25 rounded-3">
                 <div class="card-body text-center p-4">
-                    <div class="fs-1 mb-3">👥</div>
+                    <div class="mb-3">
+                        <img src="{% static 'DominoApp/img/users.png' %}" alt="Zarządzanie Użytkownikami" style="height: 64px; width: auto;">
+                    </div>
                     <h5 class="card-title">Użytkownicy</h5>
                     <p class="card-text text-muted">Twórz konta mieszkańców i zarządzaj danymi użytkowników.</p>
                     <a href="/users/admin/" class="btn btn-secondary w-100">Otwórz</a>
@@ -60,9 +68,11 @@
         <div class="col-md-4 user-only d-none">
             <div class="card h-100 shadow-sm border-success border-opacity-25 rounded-3">
                 <div class="card-body text-center p-4">
-                    <div class="fs-1 mb-3">🔑</div>
+                    <div class="mb-3">
+                        <img src="{% static 'DominoApp/img/flat.png' %}" alt="Moje Mieszkania" style="height: 64px; width: auto;">
+                    </div>
                     <h5 class="card-title">Moje Mieszkania</h5>
-                    <p class="card-text text-muted">Sprawdź status swoich lokali i czynsze.</p>
+                    <p class="card-text text-muted">Sprawdź status swoich lokali oraz naliczenia</p>
                     <a href="/my/flats/" class="btn btn-success w-100">Moje lokale</a>
                 </div>
             </div>
@@ -71,28 +81,47 @@
         <div class="col-md-4 user-only d-none">
             <div class="card h-100 shadow-sm border-info border-opacity-25 rounded-3">
                 <div class="card-body text-center p-4">
-                    <div class="fs-1 mb-3">🛠️</div>
+                    <div class="mb-3">  
+                        <img src="{% static 'DominoApp/img/support.png' %}" alt="Moje Zgłoszenia" style="height: 64px; width: auto;">        
+                    </div>
                     <h5 class="card-title">Moje zgłoszenia</h5>
-                    <p class="card-text text-muted">Dodawaj zgłoszenia i sprawdzaj ich status.</p>
+                    <p class="card-text text-muted">Dodawaj zgłoszenia i sprawdzaj ich status wykonania.</p>
                     <a href="/my/reports/" class="btn btn-info w-100 text-white">Otwórz</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 admin-only d-none">
+            <div class="card h-100 shadow-sm border-danger border-opacity-25 rounded-3">
+                <div class="card-body text-center p-4">
+                    <div class="mb-3">  
+                        <img src="{% static 'DominoApp/img/debt.png' %}" alt="Statystyki Zadłużeń" style="height: 64px; width: auto;">      
+                    </div>
+                    <h5 class="card-title">Zadłużenia</h5>
+                    <p class="card-text text-muted">Analiza zaległości pieniężnych mieszkań użytkowników.</p>
+                    <a href="/debt-stats/" class="btn btn-danger w-100 text-white">Otwórz</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+    </div>
+</div>
+
+
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const role = localStorage.getItem("userRole"); // Odczytujemy rolę zapisaną przy logowaniu
+    const role = localStorage.getItem("userRole"); 
     const token = localStorage.getItem("authToken");
 
-    // Jeśli brak tokena, wyrzuć do logowania
+
     if (!token) {
         window.location.href = "{% url 'custom-login' %}";
         return;
     }
 
-    // Pokazywanie sekcji na podstawie roli
+
     if (role === 'ADMIN') {
         document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('d-none'));
     } else if (role === 'RESIDENT') {

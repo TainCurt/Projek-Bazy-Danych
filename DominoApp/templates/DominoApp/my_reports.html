@@ -8,8 +8,8 @@
         <div class="text-muted">Twórz zgłoszenia i śledź ich status</div>
     </div>
     <div class="d-flex gap-2">
-        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
         <a href="/my/flats/" class="btn btn-outline-primary btn-sm">Moje mieszkania</a>
+        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm"> Powrót</a>
     </div>
 </div>
 
@@ -125,8 +125,8 @@ function statusBadge(s) {
     return `<span class="badge bg-warning text-dark">WAITING</span>`;
 }
 
-let myFlats = [];          // lista flatów z /api/my/flats/
-let buildingsMap = new Map(); // buildingId -> {city, street, number} (na potrzeby opisu w select)
+let myFlats = [];        
+let buildingsMap = new Map(); 
 
 async function loadMyFlats() {
     const res = await fetch("/api/my/flats/", {
@@ -152,8 +152,6 @@ function fillFlatSelect() {
 }
 
 async function loadBuildingsForMyFlats() {
-    // Minimalnie: do wyboru BUILDING wystarczą same ID budynków.
-    // Żeby było czytelniej w select, pobieramy /api/buildings/ i budujemy mapę adresów.
     const res = await fetch("/api/buildings/", {
         headers: { "Authorization": "Token " + token }
     });
@@ -169,8 +167,6 @@ async function loadBuildingsForMyFlats() {
 function fillBuildingSelect() {
     const sel = document.getElementById("buildingSelect");
     sel.innerHTML = "";
-
-    // unikalne buildingId wynikające z moich mieszkań
     const uniqueBuildingIds = Array.from(new Set(myFlats.map(f => String(f.BuildingId))));
 
     uniqueBuildingIds.forEach(id => {
@@ -185,7 +181,6 @@ function fillBuildingSelect() {
         sel.appendChild(opt);
     });
 
-    // jeśli jest activeBuildingId, to zaznacz
     const activeBuildingId = localStorage.getItem("activeBuildingId");
     if (activeBuildingId) {
         const found = Array.from(sel.options).some(o => o.value === String(activeBuildingId));
@@ -279,7 +274,6 @@ document.getElementById("reportForm").addEventListener("submit", async (e) => {
         } else if (type === "BUILDING") {
             payload.BuildingId = parseInt(document.getElementById("buildingSelect").value);
         }
-        // GENERAL: nic nie dodajemy
 
         const res = await fetch("/api/my/reports/", {
             method: "POST",

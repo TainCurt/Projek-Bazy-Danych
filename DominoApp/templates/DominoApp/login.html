@@ -4,40 +4,40 @@
 
 {% block content %}
 <div class="container">
-    <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
         <div class="col-md-5 col-lg-4">
-            <div class="card shadow-lg border-0 rounded-4">
+            <div class="card shadow-sm border-0" style="border-radius: 32px;">
                 <div class="card-body p-5">
-                    <div class="text-center mb-4">
-                        <div class="display-6 fw-bold text-primary mb-2">Domino</div>
-                        <p class="text-muted">Zaloguj się do panelu zarządzania</p>
+                    <div class="text-center mb-5">
+                        <div class="h2 fw-bolder text-dark mb-2" style="letter-spacing: -1px;">DOMINO</div>
+                        <p class="text-muted small">Wprowadź dane, aby zarządzać nieruchomościami</p>
                     </div>
 
-                    <div id="error-box" class="alert alert-danger d-none animate__animated animate__fadeIn" role="alert">
+                    <div id="error-box" class="alert alert-danger d-none border-0 rounded-4" role="alert">
                         <small id="error-message"></small>
                     </div>
 
                     <form id="login-form">
                         {% csrf_token %}
                         
-                        <div class="form-floating mb-3">
-                            <input type="email" id="email" class="form-control shadow-none" placeholder="name@example.com" required>
-                            <label for="email">Adres Email</label>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted ps-2">Email</label>
+                            <input type="email" id="email" class="form-control" placeholder="Twój adres email" required>
                         </div>
 
-                        <div class="form-floating mb-4">
-                            <input type="password" id="password" class="form-control shadow-none" placeholder="Hasło" required>
-                            <label for="password">Hasło</label>
+                        <div class="mb-4">
+                            <label class="form-label small fw-bold text-muted ps-2">Hasło</label>
+                            <input type="password" id="password" class="form-control" placeholder="••••••••" required>
                         </div>
 
-                        <button class="btn btn-primary w-100 py-3 fw-bold rounded-3 shadow-sm" type="submit" id="login-btn">
+                        <button class="btn btn-primary w-100 py-3" type="submit" id="login-btn">
                             <span id="btn-text">Zaloguj się</span>
                             <span id="btn-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
                         </button>
                     </form>
                 </div>
-                <div class="card-footer bg-light border-0 py-3 text-center rounded-bottom-4">
-                    <small class="text-muted">Problem z dostępem? Skontaktuj się z administratorem.</small>
+                <div class="card-footer bg-transparent border-0 py-4 text-center">
+                    <small class="text-muted">Problem z kontem? Przykro</a></small>
                 </div>
             </div>
         </div>
@@ -80,40 +80,20 @@ document.getElementById("login-form").addEventListener("submit", async function(
             throw new Error(data.error || "Nieprawidłowe dane logowania");
         }
 
-        // Zapisywanie danych sesji w przeglądarce
         localStorage.setItem("authToken", data.token);
         localStorage.setItem("userRole", data.role);
         localStorage.setItem("userId", data.userId);
 
-        // Przekierowanie po sukcesie
         window.location.href = "/dashboard/";
 
     } catch (err) {
         errorMessage.textContent = err.message;
         errorBox.classList.remove("d-none");
         
-        // Przywrócenie przycisku
         loginBtn.disabled = false;
         btnText.classList.remove("d-none");
         btnSpinner.classList.add("d-none");
     }
 });
 </script>
-
-<style>
-    /* Opcjonalne delikatne przejścia i dopieszczenie wyglądu */
-    body {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    }
-    .form-control:focus {
-        border-color: #0d6efd;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
-    }
-    .card {
-        transition: transform 0.3s ease;
-    }
-    .card:hover {
-        transform: translateY(-5px);
-    }
-</style>
 {% endblock %}

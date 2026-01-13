@@ -57,6 +57,9 @@ def admin_reports_view(request):
 def admin_users_view(request):
     return render(request, "DominoApp/admin_users.html")
 
+def debt_stats_view(request):
+    return render(request, "DominoApp/debt_stats.html")
+
 
 
 

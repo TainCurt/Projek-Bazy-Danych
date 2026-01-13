@@ -1,3 +1,104 @@
-body {
-    background-color: #f1f6a2;
+
+:root {
+    --zen-green: #00E676; 
+    --zen-bg: #F9F9F5;    
+    --zen-dark: #1A1A1A;
 }
+
+body {
+    background-color: var(--zen-bg) !important;
+    font-family: 'Inter', sans-serif;
+    color: var(--zen-dark);
+}
+
+.navbar-zen {
+    background-color: rgba(255, 255, 255, 0.7) !important;
+    backdrop-filter: blur(15px);
+    padding: 1.2rem 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.navbar-brand-zen {
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--zen-dark);
+}
+
+.card {
+    border: none !important;
+    border-radius: 32px !important; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.04) !important;
+    padding: 1rem;
+    transition: transform 0.3s ease !important;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.btn-success, 
+.btn-danger, 
+.btn-warning, 
+.btn-outline-primary,
+.btn-secondary {
+    background-color: var(--zen-green) !important;
+    border: none !important;
+    color: var(--zen-dark) !important;
+    font-weight: 600 !important;
+    border-radius: 100px !important;
+    padding: 12px 25px !important;
+    width: 100%; 
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.2) !important;
+}
+
+
+.btn-outline-primary,
+.btn-info,
+.btn-primary
+{
+    background-color: var(--zen-green) !important;
+    border: none !important;
+    color: var(--zen-dark) !important;
+    font-weight: 600 !important;
+    border-radius: 100px !important;
+    padding: 12px 25px !important;
+    width: auto; 
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.2) !important;
+}
+
+.btn-outline-danger,
+.btn-outline-success
+{
+    background-color: var(--zen-bg) !important;
+    border: 1px solid var(--zen-dark) !important;
+    color: var(--zen-dark) !important;
+    font-weight: 600 !important;
+    border-radius: 100px !important; 
+    padding: 12px 25px !important;
+    width: auto; 
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.2) !important;
+}
+
+.btn-outline-secondary
+{
+    background-color: var(--zen-dark) !important;
+    color: var(--zen-bg) !important;
+    font-weight: 600 !important;
+    border-radius: 100px !important; 
+    padding: 12px 25px !important;
+    width: auto; 
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.2) !important;
+}
+
+.btn-primary:hover, 
+.btn-danger:hover, 
+.btn-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 230, 118, 0.4) !important;
+    opacity: 0.9;
+}
+

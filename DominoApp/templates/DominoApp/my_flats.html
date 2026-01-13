@@ -8,7 +8,7 @@
         <div class="text-muted">Wybierz lokal, aby zobaczyć opłaty</div>
     </div>
 
-    <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
+    <a href="/dashboard/" class="btn btn-outline-secondary btn-sm"> Powrót</a>
 </div>
 
 <div id="errorBox" class="alert alert-danger d-none"></div>
@@ -29,8 +29,7 @@ function showError(msg) {
 
 function setActiveFlat(flat) {
     localStorage.setItem("activeFlatId", flat.FlatId);
-    localStorage.setItem("activeBuildingId", flat.BuildingId); // bo serializer zwraca FK jako id
-    // Prosty feedback:
+    localStorage.setItem("activeBuildingId", flat.BuildingId); 
     document.querySelectorAll("[data-flat-card]").forEach(el => el.classList.remove("border-success"));
     const card = document.getElementById("flat-card-" + flat.FlatId);
     if (card) card.classList.add("border-success");
@@ -42,7 +41,6 @@ async function loadMyFlats() {
         return;
     }
 
-    // jeśli ktoś wejdzie jako admin -> też pokażemy, ale docelowo to ekran residenta
     try {
         const res = await fetch("/api/my/flats/", {
             headers: { "Authorization": "Token " + token }

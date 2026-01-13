@@ -1,17 +1,19 @@
 {% extends "DominoApp/base.html" %}
-
 {% block title %}Zarządzanie Budynkami{% endblock %}
+
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm mb-2">← Powrót</a>
-        <h2 class="mb-0"><i class="bi bi-building"></i> Lista Budynków</h2>
+        <h2 class="fw-bold mb-1">Lista Budynków</h2>
+        <div class="text-muted">Wszystkie budynki w systemie</div>
     </div>
-
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBuildingModal">
-        + Dodaj nowy budynek
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addBuildingModal">
+            + Dodaj Budynek
+        </button>
+        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm"> Powrót</a>
+    </div>
 </div>
 
 
@@ -97,7 +99,6 @@ buildings.forEach(b => {
     }
 }
 
-// Funkcja dodająca budynek
 document.getElementById('add-building-form').addEventListener('submit', async (e) => {
     e.preventDefault();
         const data = {
@@ -118,13 +119,13 @@ document.getElementById('add-building-form').addEventListener('submit', async (e
     });
 
     if (response.ok) {
-        location.reload(); // Odśwież stronę po sukcesie
+        location.reload(); 
     } else {
         alert("Błąd podczas dodawania budynku.");
     }
 });
 
-// Funkcja usuwająca budynek
+
 async function deleteBuilding(id) {
     if (confirm("Czy na pewno chcesz usunąć ten budynek?")) {
         const response = await fetch(`/api/buildings/${id}/`, {
@@ -141,3 +142,4 @@ async function deleteBuilding(id) {
 document.addEventListener('DOMContentLoaded', fetchBuildings);
 </script>
 {% endblock %}
+

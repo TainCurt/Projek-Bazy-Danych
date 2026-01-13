@@ -5,13 +5,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-1">Użytkownicy</h2>
-        <div class="text-muted">Panel administratora — lista i tworzenie kont</div>
+        <div class="text-muted">Panel administratora — lista i zarządzanie kontami</div>
     </div>
     <div class="d-flex gap-2">
-        <a href="/dashboard/" class="btn btn-outline-secondary btn-sm">← Powrót</a>
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
-            + Dodaj użytkownika
-        </button>
+      <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        + Dodaj użytkownika
+      </button>
+      <a href="/dashboard/" class="btn btn-outline-secondary btn-sm"> Powrót</a>
     </div>
 </div>
 
@@ -23,11 +23,11 @@
             <thead class="table-light">
                 <tr>
                     <th>ID</th>
-                    <th>Imię</th>
-                    <th>Nazwisko</th>
+                    <th>Imię i Nazwisko</th>
                     <th>Email</th>
                     <th>Rola</th>
                     <th>Status</th>
+                    <th class="text-end pe-4">Akcje</th>
                 </tr>
             </thead>
             <tbody id="usersTable">
@@ -37,7 +37,6 @@
     </div>
 </div>
 
-<!-- Modal dodawania użytkownika -->
 <div class="modal fade" id="addUserModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
@@ -70,8 +69,47 @@
               <option value="ADMIN">ADMIN</option>
             </select>
           </div>
-
           <button type="submit" class="btn btn-success w-100">Utwórz</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editUserModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Edytuj użytkownika</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="edit-user-form">
+          <input type="hidden" id="editUserId">
+          <div class="mb-3">
+            <label class="form-label">Imię</label>
+            <input id="editUName" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Nazwisko</label>
+            <input id="editUSurname" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input id="editUEmail" type="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rola</label>
+            <select id="editURole" class="form-select">
+              <option value="RESIDENT">RESIDENT</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="editUStatus">
+            <label class="form-check-label" for="editUStatus">Konto aktywne</label>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Zapisz zmiany</button>
         </form>
       </div>
     </div>
@@ -86,50 +124,126 @@ function showError(msg) {
     const b = document.getElementById("errorBox");
     b.classList.remove("d-none");
     b.innerText = msg;
+    setTimeout(() => b.classList.add("d-none"), 5000);
 }
 
 async function loadUsers() {
     const tbody = document.getElementById("usersTable");
     tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Ładowanie...</td></tr>`;
 
-    const res = await fetch("/api/users/", {
-        headers: { "Authorization": "Token " + token }
-    });
-    const data = await res.json();
+    try {
+        const res = await fetch("/api/users/", {
+            headers: { "Authorization": "Token " + token }
+        });
+        const data = await res.json();
 
-    if (!res.ok) throw new Error(data.error || "Nie udało się pobrać użytkowników.");
+        if (!res.ok) throw new Error(data.error || "Błąd pobierania danych.");
 
-    if (!data.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Brak użytkowników.</td></tr>`;
-        return;
-    }
+        if (!data.length) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Brak użytkowników.</td></tr>`;
+            return;
+        }
 
-    tbody.innerHTML = "";
-    data.forEach(u => {
-        tbody.innerHTML += `
-          <tr>
-            <td>${u.UserId}</td>
-            <td>${u.UserName}</td>
-            <td>${u.UserSurname}</td>
-            <td>${u.UserEmail}</td>
-            <td><span class="badge bg-dark">${u.UserRole}</span></td>
-            <td>${u.UserStatus ? "Aktywny" : "Nieaktywny"}</td>
-          </tr>
-        `;
-    });
+        tbody.innerHTML = "";
+        data.forEach(u => {
+            tbody.innerHTML += `
+              <tr>
+                <td><small class="text-muted">${u.UserId}</small></td>
+                <td><strong>${u.UserName} ${u.UserSurname}</strong></td>
+                <td>${u.UserEmail}</td>
+                <td><span class="badge bg-dark">${u.UserRole}</span></td>
+                <td>
+                    <span class="badge ${u.UserStatus ? 'bg-success' : 'bg-danger'}">
+                        ${u.UserStatus ? "Aktywny" : "Nieaktywny"}
+                    </span>
+                </td>
+                <td class="text-end pe-3">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(${u.UserId}, '${u.UserName}', '${u.UserSurname}', '${u.UserEmail}', '${u.UserRole}', ${u.UserStatus})">
+                        Edytuj
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.UserId})">
+                        Usuń
+                    </button>
+                </td>
+              </tr>
+            `;
+        });
+    } catch(e) { showError(e.message); }
 }
+
+async function deleteUser(userId) {
+    if (!confirm("Czy na pewno chcesz usunąć tego użytkownika? Tej operacji nie można cofnąć.")) return;
+
+    try {
+        const res = await fetch(`/api/users/${userId}/`, {
+            method: "DELETE",
+            headers: { 
+                "Authorization": "Token " + token,
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        });
+
+        if (res.status === 204 || res.ok) {
+            await loadUsers();
+        } else {
+            const data = await res.json();
+            throw new Error(data.error || "Nie udało się usunąć użytkownika.");
+        }
+    } catch(e) { alert(e.message); }
+}
+
+function openEditModal(id, name, surname, email, role, status) {
+    document.getElementById("editUserId").value = id;
+    document.getElementById("editUName").value = name;
+    document.getElementById("editUSurname").value = surname;
+    document.getElementById("editUEmail").value = email;
+    document.getElementById("editURole").value = role;
+    document.getElementById("editUStatus").checked = status;
+
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+}
+document.getElementById("edit-user-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("editUserId").value;
+
+    const payload = {
+        UserName: document.getElementById("editUName").value,
+        UserSurname: document.getElementById("editUSurname").value,
+        UserEmail: document.getElementById("editUEmail").value,
+        UserRole: document.getElementById("editURole").value,
+        UserStatus: document.getElementById("editUStatus").checked
+    };
+
+    try {
+        const res = await fetch(`/api/users/${id}/`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Token " + token,
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Błąd podczas zapisu.");
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById("editUserModal")).hide();
+        await loadUsers();
+    } catch(e) { alert(e.message); }
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
     if (!token) { window.location.href = "/login/"; return; }
     if (role !== "ADMIN") { window.location.href = "/dashboard/"; return; }
-
-    try { await loadUsers(); }
-    catch(e){ showError(e.message); }
+    await loadUsers();
 });
 
 document.getElementById("add-user-form").addEventListener("submit", async (e) => {
     e.preventDefault();
-
     const payload = {
         UserName: document.getElementById("uName").value,
         UserSurname: document.getElementById("uSurname").value,
@@ -137,7 +251,6 @@ document.getElementById("add-user-form").addEventListener("submit", async (e) =>
         UserPassword: document.getElementById("uPass").value,
         UserRole: document.getElementById("uRole").value
     };
-
     const res = await fetch("/api/users/", {
         method: "POST",
         headers: {
@@ -147,19 +260,8 @@ document.getElementById("add-user-form").addEventListener("submit", async (e) =>
         },
         body: JSON.stringify(payload)
     });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-        alert(data.error || JSON.stringify(data) || "Nie udało się dodać użytkownika.");
-        return;
-    }
-
-    // zamknij modal
-    const modalEl = document.getElementById("addUserModal");
-    const modal = bootstrap.Modal.getInstance(modalEl);
-    modal.hide();
-
+    if (!res.ok) { alert("Błąd dodawania"); return; }
+    bootstrap.Modal.getInstance(document.getElementById("addUserModal")).hide();
     e.target.reset();
     await loadUsers();
 });
