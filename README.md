@@ -11,7 +11,7 @@ Użytkownicy standardowi mają możliwość przeglądania swoich mieszkań oraz 
 Serwis Domino opiera się na relacyjnej bazie danych PostgreSQL. Backend aplikacji został zaimplementowany w języku Python z wykorzystaniem frameworka Django. Dodatkowo zastosowano Django REST Framework, będący rozszerzeniem Django, w celu tworzenia interfejsu API umożliwiającego udostępnianie danych w formacie JSON. W projekcie wykorzystano również dekorator api_view, który pozwala na definiowanie funkcyjnych widoków API oraz obsługę żądań HTTP zgodnie z zasadami architektury REST.
 
 ### Frontend
-\#będzie
+Prezentajca frontendu znajduje się w pliku Frontend_Domino_showcase.pdf
 
 ## Baza danych oraz Modele
 Baza danych serwisu Domino zawiera 8 encji: User, Flat, Building, Rent, Report, Announ, UserFlat, Auth
