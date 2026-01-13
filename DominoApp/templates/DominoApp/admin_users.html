@@ -119,6 +119,7 @@
 <script>
 const token = localStorage.getItem("authToken");
 const role = localStorage.getItem("userRole");
+let cachedUsers = []; 
 
 function showError(msg) {
     const b = document.getElementById("errorBox");
@@ -139,6 +140,8 @@ async function loadUsers() {
 
         if (!res.ok) throw new Error(data.error || "Błąd pobierania danych.");
 
+        cachedUsers = data; 
+
         if (!data.length) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-muted text-center py-4">Brak użytkowników.</td></tr>`;
             return;
@@ -158,7 +161,7 @@ async function loadUsers() {
                     </span>
                 </td>
                 <td class="text-end pe-3">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openEditModal(${u.UserId}, '${u.UserName}', '${u.UserSurname}', '${u.UserEmail}', '${u.UserRole}', ${u.UserStatus})">
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="prepareEditModal(${u.UserId})">
                         Edytuj
                     </button>
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.UserId})">
@@ -192,17 +195,21 @@ async function deleteUser(userId) {
     } catch(e) { alert(e.message); }
 }
 
-function openEditModal(id, name, surname, email, role, status) {
-    document.getElementById("editUserId").value = id;
-    document.getElementById("editUName").value = name;
-    document.getElementById("editUSurname").value = surname;
-    document.getElementById("editUEmail").value = email;
-    document.getElementById("editURole").value = role;
-    document.getElementById("editUStatus").checked = status;
+function prepareEditModal(userId) {
+    const user = cachedUsers.find(u => u.UserId === userId);
+    if (!user) return;
+
+    document.getElementById("editUserId").value = user.UserId;
+    document.getElementById("editUName").value = user.UserName;
+    document.getElementById("editUSurname").value = user.UserSurname;
+    document.getElementById("editUEmail").value = user.UserEmail;
+    document.getElementById("editURole").value = user.UserRole;
+    document.getElementById("editUStatus").checked = user.UserStatus;
 
     const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
     modal.show();
 }
+
 document.getElementById("edit-user-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("editUserId").value;
@@ -217,7 +224,7 @@ document.getElementById("edit-user-form").addEventListener("submit", async (e) =
 
     try {
         const res = await fetch(`/api/users/${id}/`, {
-            method: "PUT",
+            method: "PATCH",
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": "Token " + token,
@@ -226,14 +233,19 @@ document.getElementById("edit-user-form").addEventListener("submit", async (e) =
             body: JSON.stringify(payload)
         });
 
+        const data = await res.json();
+
         if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.error || "Błąd podczas zapisu.");
+            console.error("Szczegóły błędu API:", data);
+            throw new Error(Object.values(data).flat().join(", ") || "Błąd podczas zapisu.");
         }
 
-        bootstrap.Modal.getInstance(document.getElementById("editUserModal")).hide();
+        const modalEl = document.getElementById("editUserModal");
+        bootstrap.Modal.getInstance(modalEl).hide();
         await loadUsers();
-    } catch(e) { alert(e.message); }
+    } catch(e) { 
+        alert("Błąd: " + e.message); 
+    }
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -251,19 +263,29 @@ document.getElementById("add-user-form").addEventListener("submit", async (e) =>
         UserPassword: document.getElementById("uPass").value,
         UserRole: document.getElementById("uRole").value
     };
-    const res = await fetch("/api/users/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Token " + token,
-            "X-CSRFToken": "{{ csrf_token }}"
-        },
-        body: JSON.stringify(payload)
-    });
-    if (!res.ok) { alert("Błąd dodawania"); return; }
-    bootstrap.Modal.getInstance(document.getElementById("addUserModal")).hide();
-    e.target.reset();
-    await loadUsers();
+    
+    try {
+        const res = await fetch("/api/users/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Token " + token,
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(Object.values(data).flat().join(", ") || "Błąd dodawania");
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById("addUserModal")).hide();
+        e.target.reset();
+        await loadUsers();
+    } catch(e) {
+        alert(e.message);
+    }
 });
 </script>
 {% endblock %}
